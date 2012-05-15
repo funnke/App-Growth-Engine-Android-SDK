@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	
+    <string name="app_name">Hook SDK Sample</string>
+    
+    <string name="verify_device">Verify Device</string>
+    <string name="verification_status">Verification Status</string>
+    <string name="discover_contacts">Discover Contacts</string>
+    <string name="recommend_invites">Get Recommended Invites</string>
+    <string name="installs">Installs</string>
+    <string name="referrals">Referrals</string>
+
+</resources>

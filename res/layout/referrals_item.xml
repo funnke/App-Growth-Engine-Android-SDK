@@ -1,0 +1,23 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent" android:orientation="vertical">
+
+	<TextView
+		android:id="@+id/invitation_date"
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+		android:layout_margin="3dip" android:textStyle="bold"/>
+
+	<TextView
+		android:id="@+id/total_click_through"
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+		android:layout_margin="3dip"/>
+
+	<TextView
+		android:id="@+id/total_invitee"
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+		android:layout_margin="3dip"/>
+
+</LinearLayout>

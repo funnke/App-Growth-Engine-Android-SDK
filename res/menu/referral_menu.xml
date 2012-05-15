@@ -1,0 +1,7 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+	<group>		
+		<item android:id="@+id/menu_referral_virtual_number" android:title="Send referral from HookMobile virtual number"/>
+		<item android:id="@+id/menu_referral_user_number" android:title="Send referral from the user's phone"/>
+		<item android:id="@+id/menu_referral_cancel" android:title="Cancel"/>
+	</group>
+</menu>
