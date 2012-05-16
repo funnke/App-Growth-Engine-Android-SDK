@@ -312,10 +312,10 @@ public class Discoverer {
 	}
     
 	/**
-	 * Gets an updated list of recommended invites from AGE. The result is optimized and filtered by the device types
+	 * Gets a list of recommended invites from AGE. The result is optimized and filtered by the device types
 	 * specified in your app profile on Hook Mobile developers portal.
 	 * 
-	 * @return the leads, which includes the phone number and device type.
+	 * @return the leads.
 	 * @throws AgeException if the AGE request failed.
 	 */
 	public List<Lead> queryLeads() throws AgeException {
