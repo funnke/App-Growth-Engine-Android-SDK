@@ -34,14 +34,14 @@ public class Discoverer {
 	private static final String MSG_DEFAULT_REFERRAL    	= "I thought you might be interested in this app %app%, check it out here %link%";
 	private static final String MSG_INSTALL_CODE_REQUIRED	= "Install code not found! Please call discover first.";
 	
-	private static final String P_ADDRESSBOOK				= "addressBook";
-	private static final String P_APP_KEY   				= "appKey";
-	private static final String P_DATE      				= "date";
-	private static final String P_DEVICE_INFO				= "deviceInfo";
-	private static final String P_INSTALL_CODE				= "installCode";
-	private static final String P_LEADS     				= "leads";
-	private static final String P_NAME      				= "name";
-	private static final String P_OS_TYPE   				= "osType";
+	private static final String P_ADDRESSBOOK       		= "addressBook";
+	private static final String P_APP_KEY           		= "appKey";
+	private static final String P_DATE              		= "date";
+	private static final String P_DEVICE_INFO       		= "deviceInfo";
+	private static final String P_INSTALL_CODE      		= "installCode";
+	private static final String P_LEADS             		= "leads";
+	private static final String P_NAME              		= "name";
+	private static final String P_OS_TYPE           		= "osType";
 	private static final String P_PHONE     				= "phone";
 	private static final String P_REFERRAL_ID				= "referralId";
 	private static final String P_REFERRAL_MESSAGE			= "referralMessage";
