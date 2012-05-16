@@ -243,7 +243,7 @@ public class HookMobileSample extends Activity implements OnClickListener {
 		};
 		a.start();
 		a = null;
-    }
+	}
 
 	private void showInstallsQueryDirectionDialog() {
 		String[] menu = new String[] {"Forward", "Backward", "Mutual", "Cancel"};
@@ -345,7 +345,7 @@ public class HookMobileSample extends Activity implements OnClickListener {
     			}
 			})
 			.show();
-    }
+	}
     
 }
 
