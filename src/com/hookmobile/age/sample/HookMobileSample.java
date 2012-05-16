@@ -21,24 +21,24 @@ public class HookMobileSample extends Activity implements OnClickListener {
 	
 	private String appKey = "Your-App-Key";
 	
-    private static int HANDLE_SHOW_LOADING								= 1;
-    private static int HANDLE_HIDE_LOADING								= 2; 
-    private static int HANDLE_VERIFICATION_STATUS_ENABLE				= 3;
-    private static int HANDLE_SHOW_MESSAGE_DIALOG						= 4;
-    private static int HANDLE_GET_RECOMMENDED_INVITES_BUTTON_ENABLE		= 5;
-    private static int HANDLE_INSTALLS_REFERRALS_ENABLE					= 6;
+	private static int HANDLE_SHOW_LOADING								= 1;
+	private static int HANDLE_HIDE_LOADING								= 2; 
+	private static int HANDLE_VERIFICATION_STATUS_ENABLE				= 3;
+	private static int HANDLE_SHOW_MESSAGE_DIALOG						= 4;
+	private static int HANDLE_GET_RECOMMENDED_INVITES_BUTTON_ENABLE		= 5;
+	private static int HANDLE_INSTALLS_REFERRALS_ENABLE					= 6;
     
-    private Button verifyDeviceButton;
-    private Button verificationStatusButton;
-    private Button discoverContactsButton;
-    private Button recommendInvitesButton;
-    private Button installsButton;
-    private Button referralsButton;
-    private ProgressDialog progressDialog;
+	private Button verifyDeviceButton;
+	private Button verificationStatusButton;
+	private Button discoverContactsButton;
+	private Button recommendInvitesButton;
+	private Button installsButton;
+	private Button referralsButton;
+	private ProgressDialog progressDialog;
     
-    private Handler handler = new Handler() {
-    	public void handleMessage(android.os.Message msg) {
-    		if(msg.what == HANDLE_SHOW_LOADING) {
+	private Handler handler = new Handler() {
+		public void handleMessage(android.os.Message msg) {
+			if(msg.what == HANDLE_SHOW_LOADING) {
     			progressDialog.show();
     		}
     		else if(msg.what == HANDLE_HIDE_LOADING) {
