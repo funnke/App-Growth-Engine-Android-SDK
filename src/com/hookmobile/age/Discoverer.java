@@ -30,19 +30,19 @@ public class Discoverer {
 	private static final String AGE_PREFERENCES 			= "age_preferences";
 	private static final String AGE_CURRENT_APP_KEY			= "current_app_key";
 	private static final String AGE_TAG_HOOK    			= "Hook";
-	private static final String AGE_DEFAULT_REFERRAL_MSG	= "I thought you might be interested in this app %app%, check it out here %link%";
 	
+	private static final String MSG_DEFAULT_REFERRAL    	= "I thought you might be interested in this app %app%, check it out here %link%";
 	private static final String MSG_INSTALL_CODE_REQUIRED	= "Install code not found! Please call discover first.";
 	
 	private static final String P_ADDRESSBOOK				= "addressBook";
-	private static final String P_APP_KEY					= "appKey";
-	private static final String P_DATE						= "date";
+	private static final String P_APP_KEY   				= "appKey";
+	private static final String P_DATE      				= "date";
 	private static final String P_DEVICE_INFO				= "deviceInfo";
 	private static final String P_INSTALL_CODE				= "installCode";
-	private static final String P_LEADS						= "leads";
-	private static final String P_NAME						= "name";
-	private static final String P_OS_TYPE					= "osType";
-	private static final String P_PHONE						= "phone";
+	private static final String P_LEADS     				= "leads";
+	private static final String P_NAME      				= "name";
+	private static final String P_OS_TYPE   				= "osType";
+	private static final String P_PHONE     				= "phone";
 	private static final String P_REFERRAL_ID				= "referralId";
 	private static final String P_REFERRAL_MESSAGE			= "referralMessage";
 	private static final String P_REFERRAL_TEMPLATE			= "referralTemplate";
@@ -469,7 +469,7 @@ public class Discoverer {
 				if(response.isSuccess()) {
 					JSONObject json = response.getJson();
 					lastReferralId = json.isNull(P_REFERRAL_ID) ? -1 : json.getLong(P_REFERRAL_ID);
-					String referralMessage = json.isNull(P_REFERRAL_MESSAGE) ? AGE_DEFAULT_REFERRAL_MSG : json.getString(P_REFERRAL_MESSAGE);
+					String referralMessage = json.isNull(P_REFERRAL_MESSAGE) ? MSG_DEFAULT_REFERRAL : json.getString(P_REFERRAL_MESSAGE);
         			
 					if(! useVirtualNumber) {
 						SmsManager sms = SmsManager.getDefault();
