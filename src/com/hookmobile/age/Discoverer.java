@@ -223,42 +223,42 @@ public class Discoverer {
 	}
     
 	/**
-     * Checks if the user has been verified or not.
-     * 
-     * @return true if user has been verified; false otherwise.
-     * @throws AgeException if the AGE request failed.
-     */
+	 * Checks if the user has been verified or not.
+	 * 
+	 * @return true if user has been verified; false otherwise.
+	 * @throws AgeException if the AGE request failed.
+	 */
 	public boolean queryVerifiedStatus() throws AgeException {
-    	try {
-    		String installCode = getInstallCode();
+		try {
+			String installCode = getInstallCode();
         	
-    		if(installCode != null) {
-    			String url = server + "/queryverify";
-    			List<NameValuePair> form = new ArrayList<NameValuePair>();
-    			form.add(new BasicNameValuePair(P_APP_KEY, getAppKey()));
-    			form.add(new BasicNameValuePair(P_INSTALL_CODE, installCode));
+			if(installCode != null) {
+				String url = server + "/queryverify";
+				List<NameValuePair> form = new ArrayList<NameValuePair>();
+				form.add(new BasicNameValuePair(P_APP_KEY, getAppKey()));
+				form.add(new BasicNameValuePair(P_INSTALL_CODE, installCode));
         	    
-    			AgeResponse response = doPost(url, form);
+				AgeResponse response = doPost(url, form);
          		
-    			if(response.isSuccess()) {
-    				JSONObject json = response.getJson();
+				if(response.isSuccess()) {
+					JSONObject json = response.getJson();
          			
-    				return Boolean.parseBoolean(json.isNull(P_VERIFIED) ? null : json.getString(P_VERIFIED));
-    			}
-    			else {
-    				throw new AgeException(response.getCode(), response.getMessage());
-    			}
-    		}
-    		else {
-    			return false;
-    		}
-    	}
-    	catch(AgeException e) {
-    		throw e;
-    	}
-    	catch(Exception e) {
-    		throw new AgeException(e);
-    	}
+					return Boolean.parseBoolean(json.isNull(P_VERIFIED) ? null : json.getString(P_VERIFIED));
+				}
+				else {
+					throw new AgeException(response.getCode(), response.getMessage());
+				}
+			}
+			else {
+				return false;
+			}
+		}
+		catch(AgeException e) {
+			throw e;
+		}
+		catch(Exception e) {
+			throw new AgeException(e);
+		}
 	}
     
 	/**
