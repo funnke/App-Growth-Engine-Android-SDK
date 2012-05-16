@@ -28,8 +28,8 @@ public class SendInvitationsView extends ListActivity {
 	private static int HANDLE_HIDELOADING = 2; 
 	private static int HANDLE_SHOWTIPS = 3; 
 	
-	private List<Lead> leads = null;
-	private ProgressDialog progressDialog = null;
+	private List<Lead> leads;
+	private ProgressDialog progressDialog;
 	
 	private Handler handler = new Handler() {
 		public void handleMessage(android.os.Message msg) {
