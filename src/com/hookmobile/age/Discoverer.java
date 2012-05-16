@@ -516,121 +516,121 @@ public class Discoverer {
 		return null;
 	}
     
-    /**
-     * Returns all referrals sent from this app user.
-     * 
-     * @return the referral list.
-     * @throws AgeException if the AGE request failed.
-     */
-    public List<Referral> queryReferrals() throws AgeException {
-    	List<Referral> referrals = queryReferrals(0);
-    	this.cachedReferrals = referrals;
+	/**
+	 * Returns all referrals sent from this app user.
+	 * 
+	 * @return the referral list.
+	 * @throws AgeException if the AGE request failed.
+	 */
+	public List<Referral> queryReferrals() throws AgeException {
+		List<Referral> referrals = queryReferrals(0);
+		this.cachedReferrals = referrals;
     	
-    	return referrals;
-    }
+		return referrals;
+	}
     
-    private List<Referral> queryReferrals(int referralId) throws AgeException {
-    	try {
-    		String installCode = getInstallCode();
+	private List<Referral> queryReferrals(int referralId) throws AgeException {
+		try {
+			String installCode = getInstallCode();
         	
-    		if(installCode != null) {
-    			List<Referral> referrals = new ArrayList<Referral>();
-    			String url = server + "/queryreferral";
-    			List<NameValuePair> form = new ArrayList<NameValuePair>();
-    			form.add(new BasicNameValuePair(P_APP_KEY, getAppKey()));
-    			form.add(new BasicNameValuePair(P_INSTALL_CODE, installCode));
-    			if(referralId > 0) {
-    				form.add(new BasicNameValuePair(P_REFERRAL_ID, String.valueOf(referralId)));
-    			}
+			if(installCode != null) {
+				List<Referral> referrals = new ArrayList<Referral>();
+				String url = server + "/queryreferral";
+				List<NameValuePair> form = new ArrayList<NameValuePair>();
+				form.add(new BasicNameValuePair(P_APP_KEY, getAppKey()));
+				form.add(new BasicNameValuePair(P_INSTALL_CODE, installCode));
+				if(referralId > 0) {
+					form.add(new BasicNameValuePair(P_REFERRAL_ID, String.valueOf(referralId)));
+				}
         		
-    			AgeResponse response = doPost(url, form);
+				AgeResponse response = doPost(url, form);
         		
-    			if(response.isSuccess()) {
-    				JSONObject json = response.getJson();
-    				JSONArray jsonArray = json.isNull(P_REFERRALS) ? null : json.getJSONArray(P_REFERRALS);
+				if(response.isSuccess()) {
+					JSONObject json = response.getJson();
+					JSONArray jsonArray = json.isNull(P_REFERRALS) ? null : json.getJSONArray(P_REFERRALS);
         			
-    				if(jsonArray != null) {
-    					int count = jsonArray.length();
+					if(jsonArray != null) {
+						int count = jsonArray.length();
     					
-    					for(int i=0; i < count; i++) {
-    						if(! jsonArray.isNull(i)) {
-    							JSONObject referralObj = jsonArray.getJSONObject(i);
-    							Referral referral = new Referral();
-    							referral.setReferralId(referralObj.isNull(P_REFERRAL_ID) ? -1 : referralObj.getLong(P_REFERRAL_ID));
-    							referral.setInvitationDate(referralObj.isNull(P_DATE) ? "" : referralObj.getString(P_DATE));
-    							referral.setTotalClickThrough(referralObj.isNull(P_TOTAL_CLICK_THROUGH) ? 0 : referralObj.getInt(P_TOTAL_CLICK_THROUGH));
-    							referral.setTotalInvitee(referralObj.isNull(P_TOTAL_INVITEE) ? 0 : referralObj.getInt(P_TOTAL_INVITEE));
+						for(int i=0; i < count; i++) {
+							if(! jsonArray.isNull(i)) {
+								JSONObject referralObj = jsonArray.getJSONObject(i);
+								Referral referral = new Referral();
+								referral.setReferralId(referralObj.isNull(P_REFERRAL_ID) ? -1 : referralObj.getLong(P_REFERRAL_ID));
+								referral.setInvitationDate(referralObj.isNull(P_DATE) ? "" : referralObj.getString(P_DATE));
+								referral.setTotalClickThrough(referralObj.isNull(P_TOTAL_CLICK_THROUGH) ? 0 : referralObj.getInt(P_TOTAL_CLICK_THROUGH));
+								referral.setTotalInvitee(referralObj.isNull(P_TOTAL_INVITEE) ? 0 : referralObj.getInt(P_TOTAL_INVITEE));
     							
-    							referrals.add(referral);
-    						}
-    					}
-    				}
+								referrals.add(referral);
+							}
+						}
+					}
         			
-    				return referrals;
-    			}
-    			else {
-    				throw new AgeException(response.getCode(), response.getMessage());
-    			}
-    		}
-    		else {
-    			throw new IllegalStateException(MSG_INSTALL_CODE_REQUIRED);
-    		}
-    	}
-    	catch(AgeException e) {
-    		throw e;
-    	}
-    	catch(Exception e) {
-    		throw new AgeException(e);
-    	}
-    }
+					return referrals;
+				}
+				else {
+					throw new AgeException(response.getCode(), response.getMessage());
+				}
+			}
+			else {
+				throw new IllegalStateException(MSG_INSTALL_CODE_REQUIRED);
+			}
+		}
+		catch(AgeException e) {
+			throw e;
+		}
+		catch(Exception e) {
+			throw new AgeException(e);
+		}
+	}
 
-    private String getAppKey() {
-    	if(appKey == null) {
-    		appKey = loadCurrentAppKey();
-    	}
+	private String getAppKey() {
+		if(appKey == null) {
+			appKey = loadCurrentAppKey();
+		}
     	
-    	return appKey;
-    }
+		return appKey;
+	}
     
-    private String loadCurrentAppKey() {
-    	SharedPreferences prefs = context.getSharedPreferences(AGE_PREFERENCES, Context.MODE_PRIVATE);
+	private String loadCurrentAppKey() {
+		SharedPreferences prefs = context.getSharedPreferences(AGE_PREFERENCES, Context.MODE_PRIVATE);
     	
-    	return prefs.getString(AGE_CURRENT_APP_KEY, null);
-    }
+		return prefs.getString(AGE_CURRENT_APP_KEY, null);
+	}
     
-    private void saveCurrentAppKey(String appKey) {
-    	if(appKey != null) {
-    		SharedPreferences prefs = context.getSharedPreferences(AGE_PREFERENCES, Context.MODE_PRIVATE);
-    		Editor editor = prefs.edit();
-    		editor.putString(AGE_CURRENT_APP_KEY, appKey);
-    		editor.commit();
-    	}
-    }
+	private void saveCurrentAppKey(String appKey) {
+		if(appKey != null) {
+			SharedPreferences prefs = context.getSharedPreferences(AGE_PREFERENCES, Context.MODE_PRIVATE);
+			Editor editor = prefs.edit();
+			editor.putString(AGE_CURRENT_APP_KEY, appKey);
+			editor.commit();
+		}
+	}
     
-    private String loadInstallCode() {
-    	String appKey = getAppKey();
+	private String loadInstallCode() {
+		String appKey = getAppKey();
     	
-    	if(appKey != null) {
-    		SharedPreferences prefs = context.getSharedPreferences(AGE_PREFERENCES, Context.MODE_PRIVATE);
-        	
-        	return prefs.getString(appKey, null);
-    	}
+		if(appKey != null) {
+			SharedPreferences prefs = context.getSharedPreferences(AGE_PREFERENCES, Context.MODE_PRIVATE);
+			
+			return prefs.getString(appKey, null);
+		}
     	
-    	return null;
-    }
+		return null;
+	}
     
-    private void saveInstallCode(String installCode) {
-    	if(installCode != null) {
-    		this.installCode = installCode;
+	private void saveInstallCode(String installCode) {
+		if(installCode != null) {
+			this.installCode = installCode;
     		
-    		SharedPreferences prefs = context.getSharedPreferences(AGE_PREFERENCES, Context.MODE_PRIVATE);
-    		Editor editor = prefs.edit();
-    		editor.putString(getAppKey(), installCode);
-    		editor.commit();
-    	}
-    }
+			SharedPreferences prefs = context.getSharedPreferences(AGE_PREFERENCES, Context.MODE_PRIVATE);
+			Editor editor = prefs.edit();
+			editor.putString(getAppKey(), installCode);
+			editor.commit();
+		}
+	}
     
-    static class AgeResponse {
+	static class AgeResponse {
 		
 		private int code;
 		private String message;
