@@ -96,6 +96,11 @@ public class Discoverer {
 		throw new IllegalStateException("Please activate first.");
 	}
     
+    /**
+     * Gets the Hook Moible virtual number.
+     * 
+     * @return the virtual number.
+     */
     public static String getVirtualNumber() {
     	return virtualNumber;
     }
@@ -113,14 +118,6 @@ public class Discoverer {
     	
     	Log.i(AGE_TAG_HOOK, "devicePhone: "+ devicePhone);
     	Log.i(AGE_TAG_HOOK, "installCode: "+ installCode);
-    }
-    
-    public String getAppKey() {
-    	if(appKey == null) {
-    		appKey = loadCurrentAppKey();
-    	}
-    	
-    	return appKey;
     }
     
     /**
@@ -188,33 +185,72 @@ public class Discoverer {
 	 * @throws AgeException if the AGE request failed.
 	 */
 	public String verifyDevice(boolean useMtVerification, String name) throws AgeException {
-    	try {
-    		String installCode = getInstallCode();
-        	String url = server + "/newverify";
-    		List<NameValuePair> form = new ArrayList<NameValuePair>();
-    	    form.add(new BasicNameValuePair(P_APP_KEY, getAppKey()));
-    	    form.add(new BasicNameValuePair(P_PHONE, getDevicePhone()));
-    	    form.add(new BasicNameValuePair(P_VERIFY_MT, String.valueOf(useMtVerification)));
-    	    form.add(new BasicNameValuePair(P_DEVICE_INFO, getDeviceOsInfo(context)));
-    	    if(installCode != null) {
-    			form.add(new BasicNameValuePair(P_INSTALL_CODE, installCode));
-    		}
-    	    if(name != null) {
-    	    	form.add(new BasicNameValuePair(P_NAME, name));
-        	}
-    		
-    		AgeResponse response = doPost(url, form);
-    		
-    		if(response.isSuccess()) {
-    			JSONObject json = response.getJson();
-    			installCode = json.isNull(P_INSTALL_CODE) ? null : json.getString(P_INSTALL_CODE);
+		try {
+			String installCode = getInstallCode();
+			String url = server + "/newverify";
+			List<NameValuePair> form = new ArrayList<NameValuePair>();
+			form.add(new BasicNameValuePair(P_APP_KEY, getAppKey()));
+			form.add(new BasicNameValuePair(P_PHONE, getDevicePhone()));
+			form.add(new BasicNameValuePair(P_VERIFY_MT, String.valueOf(useMtVerification)));
+			form.add(new BasicNameValuePair(P_DEVICE_INFO, getDeviceOsInfo(context)));
+			if(installCode != null) {
+				form.add(new BasicNameValuePair(P_INSTALL_CODE, installCode));
+			}
+			if(name != null) {
+				form.add(new BasicNameValuePair(P_NAME, name));
+			}
+			
+			AgeResponse response = doPost(url, form);
+			
+			if(response.isSuccess()) {
+				JSONObject json = response.getJson();
+				installCode = json.isNull(P_INSTALL_CODE) ? null : json.getString(P_INSTALL_CODE);
 				
-    			saveInstallCode(installCode);
+				saveInstallCode(installCode);
 				
 				return json.isNull(P_VERIFY_MESSAGE) ? null : json.getString(P_VERIFY_MESSAGE);
+			}
+			else {
+				throw new AgeException(response.getCode(), response.getMessage());
+			}
+		}
+		catch(AgeException e) {
+			throw e;
+		}
+		catch(Exception e) {
+			throw new AgeException(e);
+		}
+	}
+    
+	/**
+     * Checks if the user has been verified or not.
+     * 
+     * @return true if user has been verified; false otherwise.
+     * @throws AgeException if the AGE request failed.
+     */
+	public boolean queryVerifiedStatus() throws AgeException {
+    	try {
+    		String installCode = getInstallCode();
+        	
+    		if(installCode != null) {
+    			String url = server + "/queryverify";
+    			List<NameValuePair> form = new ArrayList<NameValuePair>();
+    			form.add(new BasicNameValuePair(P_APP_KEY, getAppKey()));
+    			form.add(new BasicNameValuePair(P_INSTALL_CODE, installCode));
+        	    
+    			AgeResponse response = doPost(url, form);
+         		
+    			if(response.isSuccess()) {
+    				JSONObject json = response.getJson();
+         			
+    				return Boolean.parseBoolean(json.isNull(P_VERIFIED) ? null : json.getString(P_VERIFIED));
+    			}
+    			else {
+    				throw new AgeException(response.getCode(), response.getMessage());
+    			}
     		}
     		else {
-    			throw new AgeException(response.getCode(), response.getMessage());
+    			return false;
     		}
     	}
     	catch(AgeException e) {
@@ -223,301 +259,262 @@ public class Discoverer {
     	catch(Exception e) {
     		throw new AgeException(e);
     	}
-    }
+	}
     
-    /**
-     * Checks if the user has been verified or not.
-     * 
-     * @return true if user has been verified; false otherwise.
-     * @throws AgeException if the AGE request failed.
-     */
-    public boolean queryVerifiedStatus() throws AgeException {
-    	try {
-    		String installCode = getInstallCode();
-        	
-        	if(installCode != null) {
-        		String url = server + "/queryverify";
-        		List<NameValuePair> form = new ArrayList<NameValuePair>();
-        	    form.add(new BasicNameValuePair(P_APP_KEY, getAppKey()));
-        	    form.add(new BasicNameValuePair(P_INSTALL_CODE, installCode));
-        	    
-        	    AgeResponse response = doPost(url, form);
-         		
-         		if(response.isSuccess()) {
-         			JSONObject json = response.getJson();
-         			
-         			return Boolean.parseBoolean(json.isNull(P_VERIFIED) ? null : json.getString(P_VERIFIED));
-         		}
-         		else {
-         			throw new AgeException(response.getCode(), response.getMessage());
-         		}
-        	}
-        	else {
-        		return false;
-        	}
- 		}
- 		catch(AgeException e) {
-     		throw e;
-     	}
- 		catch(Exception e) {
- 			throw new AgeException(e);
- 		}
-    }
-    
-    /**
-     * Submits a discovery request. User's address book will be securely uploaded to AGE server for the analysis.
-     * It might take a minute for AGE to perform device detection and data mining.
-     * 
-     * @throws AgeException if the AGE request failed.
-     */
-    public void discover() throws AgeException {
+	/**
+	 * Submits a discovery request. User's address book will be securely uploaded to AGE server for the analysis.
+	 * It might take a minute for AGE to perform device detection and data mining.
+	 * 
+	 * @throws AgeException if the AGE request failed.
+	 */
+	public void discover() throws AgeException {
 		try {
 			String installCode = getInstallCode();
-	    	String url = server + "/newleads";
+			String url = server + "/newleads";
 			List<NameValuePair> form = new ArrayList<NameValuePair>();
-		    form.add(new BasicNameValuePair(P_APP_KEY, getAppKey()));
-		    form.add(new BasicNameValuePair(P_PHONE, getDevicePhone()));
-		    form.add(new BasicNameValuePair(P_ADDRESSBOOK, getAddressbook(context)));
-		    form.add(new BasicNameValuePair(P_DEVICE_INFO, getDeviceOsInfo(context)));
-		    if(installCode != null) {
+			form.add(new BasicNameValuePair(P_APP_KEY, getAppKey()));
+			form.add(new BasicNameValuePair(P_PHONE, getDevicePhone()));
+			form.add(new BasicNameValuePair(P_ADDRESSBOOK, getAddressbook(context)));
+			form.add(new BasicNameValuePair(P_DEVICE_INFO, getDeviceOsInfo(context)));
+			if(installCode != null) {
 				form.add(new BasicNameValuePair(P_INSTALL_CODE, installCode));
 			}
 		    
 			AgeResponse response = doPost(url, form);
     		
-    		if(response.isSuccess()) {
-    			JSONObject json = response.getJson();
-    			installCode = json.isNull(P_INSTALL_CODE) ? null : json.getString(P_INSTALL_CODE);
+			if(response.isSuccess()) {
+				JSONObject json = response.getJson();
+				installCode = json.isNull(P_INSTALL_CODE) ? null : json.getString(P_INSTALL_CODE);
 				
-    			saveInstallCode(installCode);
-    		}
-    		else {
-    			throw new AgeException(response.getCode(), response.getMessage());
-    		}
+				saveInstallCode(installCode);
+			}
+			else {
+				throw new AgeException(response.getCode(), response.getMessage());
+			}
 		}
 		catch(AgeException e) {
-    		throw e;
-    	}
+			throw e;
+		}
 		catch(Exception e) {
 			throw new AgeException(e);
 		}
-    }
+	}
     
-    /**
-     * Gets an updated list of recommended invites from AGE. The result is optimized and filtered by the device types
-     * specified in your app profile on Hook Mobile developers portal.
-     * 
-     * @return the leads, which includes the phone number and device type.
-     * @throws AgeException if the AGE request failed.
-     */
-    public List<Lead> queryLeads() throws AgeException {
-    	try {
-    		String installCode = getInstallCode();
+	/**
+	 * Gets an updated list of recommended invites from AGE. The result is optimized and filtered by the device types
+	 * specified in your app profile on Hook Mobile developers portal.
+	 * 
+	 * @return the leads, which includes the phone number and device type.
+	 * @throws AgeException if the AGE request failed.
+	 */
+	public List<Lead> queryLeads() throws AgeException {
+		try {
+			String installCode = getInstallCode();
         	
-        	if(installCode != null) {
-        		List<Lead> leads = new ArrayList<Lead>();
-            	String url = server + "/queryleads";
-            	List<NameValuePair> form = new ArrayList<NameValuePair>();
-        	    form.add(new BasicNameValuePair(P_APP_KEY, getAppKey()));
-        	    form.add(new BasicNameValuePair(P_INSTALL_CODE, installCode));
+			if(installCode != null) {
+				List<Lead> leads = new ArrayList<Lead>();
+				String url = server + "/queryleads";
+				List<NameValuePair> form = new ArrayList<NameValuePair>();
+				form.add(new BasicNameValuePair(P_APP_KEY, getAppKey()));
+				form.add(new BasicNameValuePair(P_INSTALL_CODE, installCode));
         	    
-    			AgeResponse response = doPost(url, form);
+				AgeResponse response = doPost(url, form);
         		
-        		if(response.isSuccess()) {
-        			JSONObject json = response.getJson();
-        			JSONArray jsonArray = json.isNull(P_LEADS) ? null : json.getJSONArray(P_LEADS);
+				if(response.isSuccess()) {
+					JSONObject json = response.getJson();
+					JSONArray jsonArray = json.isNull(P_LEADS) ? null : json.getJSONArray(P_LEADS);
         			
-        			if(jsonArray != null) {
-    					int count = jsonArray.length();
+					if(jsonArray != null) {
+						int count = jsonArray.length();
     					
-    					for(int i=0; i < count; i++) {
-    						if(! jsonArray.isNull(i)) {
-    							JSONObject leadObj = jsonArray.getJSONObject(i);
-    							Lead lead = new Lead();
-    							lead.setPhone(leadObj.isNull(P_PHONE) ? "Unknown" : leadObj.getString(P_PHONE));
-    							lead.setOsType(leadObj.isNull(P_OS_TYPE) ? "Unknown" : leadObj.getString(P_OS_TYPE));
+						for(int i=0; i < count; i++) {
+							if(! jsonArray.isNull(i)) {
+								JSONObject leadObj = jsonArray.getJSONObject(i);
+								Lead lead = new Lead();
+								lead.setPhone(leadObj.isNull(P_PHONE) ? "Unknown" : leadObj.getString(P_PHONE));
+								lead.setOsType(leadObj.isNull(P_OS_TYPE) ? "Unknown" : leadObj.getString(P_OS_TYPE));
     							
-    							leads.add(lead);
-    						}
-    					}
-    				}
-        			this.cachedLeads = leads;
+								leads.add(lead);
+							}
+						}
+					}
+					this.cachedLeads = leads;
         			
-    				return leads;
-        		}
-        		else {
-        			throw new AgeException(response.getCode(), response.getMessage());
-        		}
-        	}
-        	else {
-        		throw new IllegalStateException(MSG_INSTALL_CODE_REQUIRED);
-        	}
+					return leads;
+				}
+				else {
+					throw new AgeException(response.getCode(), response.getMessage());
+				}
+			}
+			else {
+				throw new IllegalStateException(MSG_INSTALL_CODE_REQUIRED);
+			}
 		}
 		catch(AgeException e) {
-    		throw e;
-    	}
+			throw e;
+		}
 		catch(Exception e) {
 			throw new AgeException(e);
 		}
-    }
+	}
     
-    /**
-     * Gets a list of friends who have also installed the app. There are three query modes: <br/>
-     * 1. Forward - Find contacts within your address book who has the same app. <br/>
-     * 2. Backward - Find other app users who has your phone number in their address book. <br/>
-     * 3. Mutual - Find contacts within your address book who has the same app and who also has your contact in his/her address book.
-     * 
-     * @param direction the query direction.
-     * @return the list of the phone numbers.
-     * @throws AgeException if the AGE request failed.
-     */
-    public List<String> queryInstalls(Direction direction) throws AgeException {
-    	try {
-    		String installCode = getInstallCode();
+	/**
+	 * Gets a list of friends who have also installed the app. There are three query modes: <br/>
+	 * 1. Forward - Find contacts within your address book who has the same app. <br/>
+	 * 2. Backward - Find other app users who has your phone number in their address book. <br/>
+	 * 3. Mutual - Find contacts within your address book who has the same app and who also has your contact in his/her address book.
+	 * 
+	 * @param direction the query direction.
+	 * @return the list of the phone numbers.
+	 * @throws AgeException if the AGE request failed.
+	 */
+	public List<String> queryInstalls(Direction direction) throws AgeException {
+		try {
+			String installCode = getInstallCode();
         	
-        	if(installCode != null) {
-        		List<String> installs = new ArrayList<String>();
-            	String url = server + "/queryinstalls";
-            	List<NameValuePair> form = new ArrayList<NameValuePair>();
-        	    form.add(new BasicNameValuePair(P_APP_KEY, getAppKey()));
-        	    form.add(new BasicNameValuePair(P_INSTALL_CODE, installCode));
-        	    form.add(new BasicNameValuePair(P_REFERENCE, direction.name()));
+			if(installCode != null) {
+				List<String> installs = new ArrayList<String>();
+				String url = server + "/queryinstalls";
+				List<NameValuePair> form = new ArrayList<NameValuePair>();
+				form.add(new BasicNameValuePair(P_APP_KEY, getAppKey()));
+				form.add(new BasicNameValuePair(P_INSTALL_CODE, installCode));
+				form.add(new BasicNameValuePair(P_REFERENCE, direction.name()));
         	    
-    			AgeResponse response = doPost(url, form);
+				AgeResponse response = doPost(url, form);
         		
-        		if(response.isSuccess()) {
-        			JSONObject json = response.getJson();
-        			JSONArray jsonArray = json.isNull(P_LEADS) ? null : json.getJSONArray(P_LEADS);
+				if(response.isSuccess()) {
+					JSONObject json = response.getJson();
+					JSONArray jsonArray = json.isNull(P_LEADS) ? null : json.getJSONArray(P_LEADS);
         			
-        			if(jsonArray != null) {
-    					int count = jsonArray.length();
+					if(jsonArray != null) {
+						int count = jsonArray.length();
     					
-    					for(int i=0; i < count; i++) {
-    						if(! jsonArray.isNull(i)) {
-    							installs.add(jsonArray.getString(i));
-    						}
-    					}
-        			}
-        			this.cachedInstalls = installs;
+						for(int i=0; i < count; i++) {
+							if(! jsonArray.isNull(i)) {
+								installs.add(jsonArray.getString(i));
+							}
+						}
+					}
+					this.cachedInstalls = installs;
         			
-        			return installs;
-        		}
-        		else {
-        			throw new AgeException(response.getCode(), response.getMessage());
-        		}
-        	}
-        	else {
-        		throw new IllegalStateException(MSG_INSTALL_CODE_REQUIRED);
-        	}
+					return installs;
+				}
+				else {
+					throw new AgeException(response.getCode(), response.getMessage());
+				}
+			}
+			else {
+				throw new IllegalStateException(MSG_INSTALL_CODE_REQUIRED);
+			}
 		}
 		catch(AgeException e) {
-    		throw e;
-    	}
+			throw e;
+		}
 		catch(Exception e) {
 			throw new AgeException(e);
 		}
-    }
+	}
     
-    /**
-     * Sends a referral message to the specified phone numbers.
-     * 
-     * @param phones the recipients of the invitation.
-     * @param useVirtualNumber true to send via Hook Mobile virtual number; false to send via user's phone.
-     * @param name the name of the app user or invitation sender.
-     * @return the referral ID, which can be used to track the referral status later.
-     * @throws AgeException if the AGE request failed.
-     */
-    public long newReferral(List<String> phones, boolean useVirtualNumber, String name) throws AgeException {
-    	return newReferral(phones, useVirtualNumber, name, null);
-    }
+	/**
+	 * Sends a referral message to the specified phone numbers.
+	 * 
+	 * @param phones the recipients of the invitation.
+	 * @param useVirtualNumber true to send via Hook Mobile virtual number; false to send via user's phone.
+	 * @param name the name of the app user or invitation sender.
+	 * @return the referral ID, which can be used to track the referral status later.
+	 * @throws AgeException if the AGE request failed.
+	 */
+	public long newReferral(List<String> phones, boolean useVirtualNumber, String name) throws AgeException {
+		return newReferral(phones, useVirtualNumber, name, null);
+	}
 
-    /**
-     * Sends a referral message to the specified phone numbers.
-     * 
-     * @param phones the recipients of the invitation.
-     * @param useVirtualNumber true to send via Hook Mobile virtual number; false to send via user's phone.
-     * @param name the name of the app user or invitation sender
-     * @param message the message template to use. It will overwrite the default one configured in the app profile.
-     * @return the referral ID, which can be used to track the referral status later.
-     * @throws AgeException if the AGE request failed.
-     */
-    public long newReferral(List<String> phones, boolean useVirtualNumber, String name, String message) throws AgeException {
-    	try {
-    		String installCode = getInstallCode();
-    		if(! useVirtualNumber && ! isSmsSupported(context)) {
-    			Log.d(AGE_TAG_HOOK, "SMS not supported, use virtual number instead.");
+	/**
+	 * Sends a referral message to the specified phone numbers.
+	 * 
+	 * @param phones the recipients of the invitation.
+	 * @param useVirtualNumber true to send via Hook Mobile virtual number; false to send via user's phone.
+	 * @param name the name of the app user or invitation sender
+	 * @param message the message template to use. It will overwrite the default one configured in the app profile.
+	 * @return the referral ID, which can be used to track the referral status later.
+	 * @throws AgeException if the AGE request failed.
+	 */
+	public long newReferral(List<String> phones, boolean useVirtualNumber, String name, String message) throws AgeException {
+		try {
+			String installCode = getInstallCode();
+			if(! useVirtualNumber && ! isSmsSupported(context)) {
+				Log.d(AGE_TAG_HOOK, "SMS not supported, use virtual number instead.");
     			
-    			useVirtualNumber = true;
-    		}
+				useVirtualNumber = true;
+			}
         	
-        	if(installCode != null) {
-        		String url = server + "/newreferral";
-        		List<NameValuePair> form = new ArrayList<NameValuePair>();
-        	    form.add(new BasicNameValuePair(P_APP_KEY, getAppKey()));
-        	    form.add(new BasicNameValuePair(P_INSTALL_CODE, installCode));
-        	    for(String phone : phones) {
-        	    	form.add(new BasicNameValuePair(P_PHONE, phone));
-        		}
-        	    form.add(new BasicNameValuePair(P_USE_VIRTUAL_NUMBER, String.valueOf(useVirtualNumber)));
-        		form.add(new BasicNameValuePair(P_SEND_NOW, "true"));
-        		if(name != null) {
-        			form.add(new BasicNameValuePair(P_NAME, name));
-        		}
-        		if(! isEmptyStr(message)) {
-        			form.add(new BasicNameValuePair(P_REFERRAL_TEMPLATE, message));
-        		}
+			if(installCode != null) {
+				String url = server + "/newreferral";
+				List<NameValuePair> form = new ArrayList<NameValuePair>();
+				form.add(new BasicNameValuePair(P_APP_KEY, getAppKey()));
+				form.add(new BasicNameValuePair(P_INSTALL_CODE, installCode));
+				for(String phone : phones) {
+					form.add(new BasicNameValuePair(P_PHONE, phone));
+				}
+				form.add(new BasicNameValuePair(P_USE_VIRTUAL_NUMBER, String.valueOf(useVirtualNumber)));
+				form.add(new BasicNameValuePair(P_SEND_NOW, "true"));
+				if(name != null) {
+					form.add(new BasicNameValuePair(P_NAME, name));
+				}
+				if(! isEmptyStr(message)) {
+					form.add(new BasicNameValuePair(P_REFERRAL_TEMPLATE, message));
+				}
         		
-    			AgeResponse response = doPost(url, form);
+				AgeResponse response = doPost(url, form);
         		
-        		if(response.isSuccess()) {
-        			JSONObject json = response.getJson();
-        			lastReferralId = json.isNull(P_REFERRAL_ID) ? -1 : json.getLong(P_REFERRAL_ID);
-        			String referralMessage = json.isNull(P_REFERRAL_MESSAGE) ? AGE_DEFAULT_REFERRAL_MSG : json.getString(P_REFERRAL_MESSAGE);
+				if(response.isSuccess()) {
+					JSONObject json = response.getJson();
+					lastReferralId = json.isNull(P_REFERRAL_ID) ? -1 : json.getLong(P_REFERRAL_ID);
+					String referralMessage = json.isNull(P_REFERRAL_MESSAGE) ? AGE_DEFAULT_REFERRAL_MSG : json.getString(P_REFERRAL_MESSAGE);
         			
-        			if(! useVirtualNumber) {
-        				SmsManager sms = SmsManager.getDefault();
+					if(! useVirtualNumber) {
+						SmsManager sms = SmsManager.getDefault();
         				
-        				for(String phone : phones) {
-        					sms.sendTextMessage(phone, null, referralMessage, null, null);
-        				}
-        			}
+						for(String phone : phones) {
+							sms.sendTextMessage(phone, null, referralMessage, null, null);
+						}
+					}
     				
-    				return lastReferralId;
-        		}
-        		else {
-        			throw new AgeException(response.getCode(), response.getMessage());
-        		}
-        	}
-        	else {
-        		throw new IllegalStateException(MSG_INSTALL_CODE_REQUIRED);
-        	}
+					return lastReferralId;
+				}
+				else {
+					throw new AgeException(response.getCode(), response.getMessage());
+				}
+			}
+			else {
+				throw new IllegalStateException(MSG_INSTALL_CODE_REQUIRED);
+			}
 		}
 		catch(AgeException e) {
-    		throw e;
-    	}
+			throw e;
+		}
 		catch(Exception e) {
 			throw new AgeException(e);
 		}
-    }
+	}
     
-    /**
-     * Returns the specified referral. 
-     * 
-     * @param referralId the referral ID.
-     * @return a Referral representing the referral.
-     * @throws AgeException if the AGE request failed.
-     */
-    public Referral queryReferral(int referralId) throws AgeException {
-    	if(referralId > 0) {
-    		List<Referral> referrals = queryReferrals(referralId);
+	/**
+	 * Returns the specified referral. 
+	 * 
+	 * @param referralId the referral ID.
+	 * @return a Referral representing the referral.
+	 * @throws AgeException if the AGE request failed.
+	 */
+	public Referral queryReferral(int referralId) throws AgeException {
+		if(referralId > 0) {
+			List<Referral> referrals = queryReferrals(referralId);
         	
-        	if(referrals.size() > 0) {
-        		return referrals.get(0);
-        	}
-    	}
+			if(referrals.size() > 0) {
+				return referrals.get(0);
+			}
+		}
     	
-    	return null;
-    }
+		return null;
+	}
     
     /**
      * Returns all referrals sent from this app user.
@@ -536,23 +533,23 @@ public class Discoverer {
     	try {
     		String installCode = getInstallCode();
         	
-        	if(installCode != null) {
-        		List<Referral> referrals = new ArrayList<Referral>();
-            	String url = server + "/queryreferral";
-            	List<NameValuePair> form = new ArrayList<NameValuePair>();
-        	    form.add(new BasicNameValuePair(P_APP_KEY, getAppKey()));
-        	    form.add(new BasicNameValuePair(P_INSTALL_CODE, installCode));
-        	    if(referralId > 0) {
-        	    	form.add(new BasicNameValuePair(P_REFERRAL_ID, String.valueOf(referralId)));
-        		}
+    		if(installCode != null) {
+    			List<Referral> referrals = new ArrayList<Referral>();
+    			String url = server + "/queryreferral";
+    			List<NameValuePair> form = new ArrayList<NameValuePair>();
+    			form.add(new BasicNameValuePair(P_APP_KEY, getAppKey()));
+    			form.add(new BasicNameValuePair(P_INSTALL_CODE, installCode));
+    			if(referralId > 0) {
+    				form.add(new BasicNameValuePair(P_REFERRAL_ID, String.valueOf(referralId)));
+    			}
         		
     			AgeResponse response = doPost(url, form);
         		
-        		if(response.isSuccess()) {
-        			JSONObject json = response.getJson();
-        			JSONArray jsonArray = json.isNull(P_REFERRALS) ? null : json.getJSONArray(P_REFERRALS);
+    			if(response.isSuccess()) {
+    				JSONObject json = response.getJson();
+    				JSONArray jsonArray = json.isNull(P_REFERRALS) ? null : json.getJSONArray(P_REFERRALS);
         			
-        			if(jsonArray != null) {
+    				if(jsonArray != null) {
     					int count = jsonArray.length();
     					
     					for(int i=0; i < count; i++) {
@@ -567,24 +564,32 @@ public class Discoverer {
     							referrals.add(referral);
     						}
     					}
-        			}
+    				}
         			
-        			return referrals;
-        		}
-        		else {
-        			throw new AgeException(response.getCode(), response.getMessage());
-        		}
-        	}
-        	else {
-        		throw new IllegalStateException(MSG_INSTALL_CODE_REQUIRED);
-        	}
-		}
-		catch(AgeException e) {
+    				return referrals;
+    			}
+    			else {
+    				throw new AgeException(response.getCode(), response.getMessage());
+    			}
+    		}
+    		else {
+    			throw new IllegalStateException(MSG_INSTALL_CODE_REQUIRED);
+    		}
+    	}
+    	catch(AgeException e) {
     		throw e;
     	}
-		catch(Exception e) {
-			throw new AgeException(e);
-		}
+    	catch(Exception e) {
+    		throw new AgeException(e);
+    	}
+    }
+
+    private String getAppKey() {
+    	if(appKey == null) {
+    		appKey = loadCurrentAppKey();
+    	}
+    	
+    	return appKey;
     }
     
     private String loadCurrentAppKey() {
@@ -625,7 +630,7 @@ public class Discoverer {
     	}
     }
     
-	static class AgeResponse {
+    static class AgeResponse {
 		
 		private int code;
 		private String message;
