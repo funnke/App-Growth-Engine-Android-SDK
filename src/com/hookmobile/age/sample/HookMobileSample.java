@@ -19,9 +19,7 @@ import com.hookmobile.age.R;
 
 public class HookMobileSample extends Activity implements OnClickListener {
 	
-	//private String appKey = "Your-App-Key";
-	private String appKey = "d435c177-a12b-4914-851e-b2f8d012b975";
-//	private String appKey = "3ca1938d-958c-4b38-bd7d-baee7970a376";
+	private String appKey = "Your-App-Key";
 	
     private static int HANDLE_SHOW_LOADING								= 1;
     private static int HANDLE_HIDE_LOADING								= 2; 
@@ -69,7 +67,7 @@ public class HookMobileSample extends Activity implements OnClickListener {
     	super.onCreate(savedInstanceState);
     	setContentView(R.layout.main);
     	
-		verifyDeviceButton = (Button)findViewById(R.id.verify_device);
+    	verifyDeviceButton = (Button)findViewById(R.id.verify_device);
     	verifyDeviceButton.setOnClickListener(this);
     	verifyDeviceButton.setVisibility(View.GONE);
     	verificationStatusButton = (Button)findViewById(R.id.verification_status);
@@ -141,33 +139,33 @@ public class HookMobileSample extends Activity implements OnClickListener {
     
 	private void verifyDevice() {
     	Thread a = new Thread() {
-			@Override
-			public void run() {
-				super.run();
-				handler.sendEmptyMessage(HANDLE_SHOW_LOADING);
+    		@Override
+    		public void run() {
+    			super.run();
+    			handler.sendEmptyMessage(HANDLE_SHOW_LOADING);
 				
-				try {
-					String message = Discoverer.getInstance().verifyDevice(false, null);
-					String number = Discoverer.getSmsDest();
+    			try {
+    				String message = Discoverer.getInstance().verifyDevice(false, null);
+    				String number = Discoverer.getSmsDest();
 					
-					handler.sendEmptyMessage(HANDLE_VERIFICATION_STATUS_ENABLE);
+    				handler.sendEmptyMessage(HANDLE_VERIFICATION_STATUS_ENABLE);
 					
-					Uri smsToUri = Uri.parse("smsto:" + number);
-					Intent intent = new Intent(android.content.Intent.ACTION_SENDTO, smsToUri);  
-					intent.putExtra("sms_body", message);   
+    				Uri smsToUri = Uri.parse("smsto:" + number);
+    				Intent intent = new Intent(android.content.Intent.ACTION_SENDTO, smsToUri);  
+    				intent.putExtra("sms_body", message);   
 					
-					startActivity(intent);
-				}
-				catch(AgeException e) {
-					displayError(e);
-				}
-				
-				handler.sendEmptyMessage(HANDLE_HIDE_LOADING);
-			}
-		};
-		a.start();
-		a = null;
-    }
+    				startActivity(intent);
+    			}
+    			catch(AgeException e) {
+    				displayError(e);
+    			}
+    			
+    			handler.sendEmptyMessage(HANDLE_HIDE_LOADING);
+    		}
+    	};
+    	a.start();
+    	a = null;
+	}
     
     private void queryVerifiedStatus() {
     	Thread a = new Thread() {
