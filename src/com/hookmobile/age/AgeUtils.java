@@ -137,41 +137,40 @@ public class AgeUtils {
             	if(phoneCount > 0) {
             		String familyName = null;
             		String givenName = null;
-            		
             		Cursor nameCursor = openNameCursor(context, contactId);
                     
             		if(nameCursor.moveToFirst()) { 
             			do {  
             				familyName = nameCursor.getString(nameCursor.getColumnIndex(StructuredName.FAMILY_NAME)); 
             				givenName = nameCursor.getString(nameCursor.getColumnIndex(StructuredName.GIVEN_NAME));
-            			} 
+            			}
             			while(nameCursor.moveToNext());  
             		}
             		nameCursor.close();
                     
-                    Cursor phoneCursor = openPhoneCursor(context, contactId);
-                    
-                    if(phoneCursor.moveToFirst()) { 
-                    	do {
-                            String phoneNumber = phoneCursor.getString(phoneCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));   
-                            JSONObject contactObj = new JSONObject();
-                            
-                            try {
-                            	contactObj.put("lastName", familyName != null ? familyName : "");
-                            	contactObj.put("phone", normalizePhone(phoneNumber));
-                            	contactObj.put("firstName", givenName != null ? givenName : "");
-                            	addressBook.put(contactObj);
-                            }
-                            catch(JSONException e) {
+            		Cursor phoneCursor = openPhoneCursor(context, contactId);
+            		
+            		if(phoneCursor.moveToFirst()) { 
+            			do {
+            				String phoneNumber = phoneCursor.getString(phoneCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));   
+            				JSONObject contactObj = new JSONObject();
+            				
+            				try {
+            					contactObj.put("lastName", familyName != null ? familyName : "");
+            					contactObj.put("phone", normalizePhone(phoneNumber));
+            					contactObj.put("firstName", givenName != null ? givenName : "");
+            					addressBook.put(contactObj);
+            				}
+            				catch(JSONException e) {
                             	
-                            }
-                        }
-                    	while(phoneCursor.moveToNext());  
-                    }
-                    phoneCursor.close();
+            				}
+            			}
+            			while(phoneCursor.moveToNext());  
+            		}
+            		phoneCursor.close();
             	}
             }
-            while (cursor.moveToNext());  
+            while(cursor.moveToNext());  
         }
         cursor.close();
         
@@ -213,20 +212,20 @@ public class AgeUtils {
     
     public static boolean isSmsSupported(Context context) {
     	PackageManager manager = context.getPackageManager();
-    	 
-		if(manager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-			return true;
-		}
-		
-		return false;
+    	
+    	if(manager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
+    		return true;
+    	}
+    	
+    	return false;
     }
     
     public static boolean isEmptyStr(String str) {
-		if(str == null || str.length() == 0) {
-			return true;
-		}
-		
-		return false;
+    	if(str == null || str.length() == 0) {
+    		return true;
+    	}
+    	
+    	return false;
 	}
     
     private static Cursor openContactCursor(Context context) {
