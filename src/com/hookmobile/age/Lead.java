@@ -2,6 +2,9 @@ package com.hookmobile.age;
 
 import java.io.Serializable;
 
+/**
+ * A representation of the lead, or recommended invite, which includes phone number and device type.
+ */
 public class Lead implements Serializable {
 	
 	private static final long serialVersionUID = -1588467918247115146L;

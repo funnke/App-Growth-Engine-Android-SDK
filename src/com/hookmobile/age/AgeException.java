@@ -1,5 +1,8 @@
 package com.hookmobile.age;
 
+/**
+ * An exception that provides information on AGE error.
+ */
 public class AgeException extends Exception {
 	
 	private static final long serialVersionUID = 5754443174032107538L;

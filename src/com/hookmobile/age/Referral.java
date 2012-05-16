@@ -2,6 +2,9 @@ package com.hookmobile.age;
 
 import java.io.Serializable;
 
+/**
+ * A representation of the referral status.
+ */
 public class Referral implements Serializable {
 	
 	private static final long serialVersionUID = -3687121700384016649L;

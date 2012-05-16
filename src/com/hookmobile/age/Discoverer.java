@@ -22,6 +22,9 @@ import android.content.SharedPreferences.Editor;
 import android.telephony.SmsManager;
 import android.util.Log;
 
+/**
+ * The Discoverer class is the main class that provides the AGE service.
+ */
 public class Discoverer {
 	
 	private static final String AGE_PREFERENCES				= "age_preferences";
@@ -61,19 +64,30 @@ public class Discoverer {
 	
 	private String appKey;
 	private String devicePhone;
-    private String installCode;
-   
-    private long lastReferralId;
-    private List<Lead> cachedLeads;
-    private List<String> cachedInstalls;
-    private List<Referral> cachedReferrals;
+	private String installCode;
+	
+	private long lastReferralId;
+	private List<Lead> cachedLeads;
+	private List<String> cachedInstalls;
+	private List<Referral> cachedReferrals;
     
     
+    /**
+     * Activates the AGE service.
+     * 
+     * @param context the Android context. 
+     * @param appKey the app key you register on Hook Mobile developers portal.
+     */
     public static void activate(Context context, String appKey) {
     	Discoverer.context = context.getApplicationContext();
     	Discoverer.instance = new Discoverer(appKey);
     }
     
+    /**
+     * Gets the Discoverer. 
+     * 
+     * @return the Discoverer.
+     */
     public static Discoverer getInstance() {
     	if(instance != null) {
     		return instance;
@@ -113,13 +127,18 @@ public class Discoverer {
     	return appKey;
     }
     
+    /**
+     * Gets this device's phone number.
+     * 
+     * @return the phone number.
+     */
     public String getDevicePhone() {
     	if(devicePhone == null) {
     		devicePhone = queryDevicePhone(context);
     	}
     	
-		return devicePhone;
-	}
+    	return devicePhone;
+    }
 
 	public String getInstallCode() {
 		if(installCode == null) {
@@ -128,18 +147,7 @@ public class Discoverer {
 		
 		return installCode;
 	}
-
-	public boolean isRegistered() {
-		String installCode = getInstallCode();
-		
-    	if(isEmptyStr(installCode)) {
-    		return false;
-    	}
-    	else {
-    		return true;
-    	}
-    }
-    
+	
 	public long getLastReferralId() {
 		if(lastReferralId > 0) {
 			return lastReferralId;
@@ -172,6 +180,17 @@ public class Discoverer {
 		return Collections.<Referral>emptyList();
 	}
 
+	/**
+	 * Verifies user's device phone. There are two types of verification, MT and MO.
+	 * In MT verification, a confirmation link will be sent to user's phone. user is then verified by clicing the link.
+	 * In MO verification, user will complete the verification by sending a verification message with an unique code.
+	 * This method returns the verification message.
+	 * 
+	 * @param useMtVerification The type of the verification. True to use MT verification; MO verification otherwise.
+	 * @param name The name of the user.
+	 * @return the verification message.
+	 * @throws AgeException if the AGE request failed.
+	 */
 	public String verifyDevice(boolean useMtVerification, String name) throws AgeException {
     	try {
     		String installCode = getInstallCode();
@@ -210,6 +229,12 @@ public class Discoverer {
     	}
     }
     
+    /**
+     * Checks if the user has been verified or not.
+     * 
+     * @return true if user has been verified; false otherwise.
+     * @throws AgeException if the AGE request failed.
+     */
     public boolean queryVerifiedStatus() throws AgeException {
     	try {
     		String installCode = getInstallCode();
@@ -232,7 +257,7 @@ public class Discoverer {
          		}
         	}
         	else {
-        		throw new IllegalStateException(MSG_INSTALL_CODE_REQUIRED);
+        		return false;
         	}
  		}
  		catch(AgeException e) {
@@ -243,6 +268,12 @@ public class Discoverer {
  		}
     }
     
+    /**
+     * Submits a discovery request. User's address book will be securely uploaded to AGE server for the analysis.
+     * It might take a minute for AGE to perform device detection and data mining.
+     * 
+     * @throws AgeException if the AGE request failed.
+     */
     public void discover() throws AgeException {
 		try {
 			String installCode = getInstallCode();
@@ -276,6 +307,13 @@ public class Discoverer {
 		}
     }
     
+    /**
+     * Gets an updated list of recommended invites from AGE. The result is optimized and filtered by the device types
+     * specified in your app profile on Hook Mobile developers portal.
+     * 
+     * @return the leads, which includes the phone number and device type.
+     * @throws AgeException if the AGE request failed.
+     */
     public List<Lead> queryLeads() throws AgeException {
     	try {
     		String installCode = getInstallCode();
@@ -327,7 +365,17 @@ public class Discoverer {
 		}
     }
     
-    public List<String> queryInstalls(String direction) throws AgeException {
+    /**
+     * Gets a list of friends who have also installed the app. There are three query modes: <br/>
+     * 1. Forward - Find contacts within your address book who has the same app. <br/>
+     * 2. Backward - Find other app users who has your phone number in their address book. <br/>
+     * 3. Mutual - Find contacts within your address book who has the same app and who also has your contact in his/her address book.
+     * 
+     * @param direction the query direction.
+     * @return the list of the phone numbers.
+     * @throws AgeException if the AGE request failed.
+     */
+    public List<String> queryInstalls(Direction direction) throws AgeException {
     	try {
     		String installCode = getInstallCode();
         	
@@ -337,7 +385,7 @@ public class Discoverer {
             	List<NameValuePair> form = new ArrayList<NameValuePair>();
         	    form.add(new BasicNameValuePair(P_APP_KEY, getAppKey()));
         	    form.add(new BasicNameValuePair(P_INSTALL_CODE, installCode));
-        	    form.add(new BasicNameValuePair(P_REFERENCE, direction));
+        	    form.add(new BasicNameValuePair(P_REFERENCE, direction.name()));
         	    
     			AgeResponse response = doPost(url, form);
         		
@@ -374,10 +422,29 @@ public class Discoverer {
 		}
     }
     
+    /**
+     * Sends a referral message to the specified phone numbers.
+     * 
+     * @param phones the recipients of the invitation.
+     * @param useVirtualNumber true to send via Hook Mobile virtual number; false to send via user's phone.
+     * @param name the name of the app user or invitation sender.
+     * @return the referral ID, which can be used to track the referral status later.
+     * @throws AgeException if the AGE request failed.
+     */
     public long newReferral(List<String> phones, boolean useVirtualNumber, String name) throws AgeException {
     	return newReferral(phones, useVirtualNumber, name, null);
     }
 
+    /**
+     * Sends a referral message to the specified phone numbers.
+     * 
+     * @param phones the recipients of the invitation.
+     * @param useVirtualNumber true to send via Hook Mobile virtual number; false to send via user's phone.
+     * @param name the name of the app user or invitation sender
+     * @param message the message template to use. It will overwrite the default one configured in the app profile.
+     * @return the referral ID, which can be used to track the referral status later.
+     * @throws AgeException if the AGE request failed.
+     */
     public long newReferral(List<String> phones, boolean useVirtualNumber, String name, String message) throws AgeException {
     	try {
     		String installCode = getInstallCode();
@@ -411,8 +478,6 @@ public class Discoverer {
         			lastReferralId = json.isNull(P_REFERRAL_ID) ? -1 : json.getLong(P_REFERRAL_ID);
         			String referralMessage = json.isNull(P_REFERRAL_MESSAGE) ? AGE_DEFAULT_REFERRAL_MSG : json.getString(P_REFERRAL_MESSAGE);
         			
-        			Log.d(AGE_TAG_HOOK, "lastReferralId: "+ lastReferralId);
-        			
         			if(! useVirtualNumber) {
         				SmsManager sms = SmsManager.getDefault();
         				
@@ -439,6 +504,13 @@ public class Discoverer {
 		}
     }
     
+    /**
+     * Returns the specified referral. 
+     * 
+     * @param referralId the referral ID.
+     * @return a Referral representing the referral.
+     * @throws AgeException if the AGE request failed.
+     */
     public Referral queryReferral(int referralId) throws AgeException {
     	if(referralId > 0) {
     		List<Referral> referrals = queryReferrals(referralId);
@@ -451,6 +523,12 @@ public class Discoverer {
     	return null;
     }
     
+    /**
+     * Returns all referrals sent from this app user.
+     * 
+     * @return the referral list.
+     * @throws AgeException if the AGE request failed.
+     */
     public List<Referral> queryReferrals() throws AgeException {
     	List<Referral> referrals = queryReferrals(0);
     	this.cachedReferrals = referrals;
@@ -551,13 +629,7 @@ public class Discoverer {
     	}
     }
     
-    public static class Directions {
-    	public final static String FORWARD		= "FORWARD";
-    	public final static String BACKWARD		= "BACKWARD";
-    	public final static String MUTUAL		= "MUTUAL";
-    }
-    
-	public static class AgeResponse {
+	static class AgeResponse {
 		
 		private int code;
 		private String message;

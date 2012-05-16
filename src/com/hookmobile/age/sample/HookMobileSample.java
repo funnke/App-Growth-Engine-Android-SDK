@@ -13,13 +13,13 @@ import android.view.View.OnClickListener;
 import android.widget.Button;
 
 import com.hookmobile.age.AgeException;
+import com.hookmobile.age.Direction;
 import com.hookmobile.age.Discoverer;
-import com.hookmobile.age.Discoverer.Directions;
 import com.hookmobile.age.R;
 
 public class HookMobileSample extends Activity implements OnClickListener {
 	
-	private String appKey = "Your-App-Key";
+	private String appKey = "d435c177-a12b-4914-851e-b2f8d012b975";
 	
 	private static int HANDLE_SHOW_LOADING = 1;
 	private static int HANDLE_HIDE_LOADING = 2; 
@@ -254,20 +254,20 @@ public class HookMobileSample extends Activity implements OnClickListener {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
 					if(which == 0) {
-						queryInstalls(Directions.FORWARD);
+						queryInstalls(Direction.FORWARD);
 					}
 					else if(which == 1) {
-						queryInstalls(Directions.BACKWARD);
+						queryInstalls(Direction.BACKWARD);
 					}
 					else if(which == 2) {
-						queryInstalls(Directions.MUTUAL);
+						queryInstalls(Direction.MUTUAL);
 					}
 				}
 			})
 			.show();
 	}
 	
-	private void queryInstalls(final String direction) {
+	private void queryInstalls(final Direction direction) {
 		Thread a = new Thread() {
 			@Override
 			public void run() {
