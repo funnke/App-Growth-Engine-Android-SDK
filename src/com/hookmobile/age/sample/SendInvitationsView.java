@@ -24,9 +24,9 @@ import com.hookmobile.age.R;
 
 public class SendInvitationsView extends ListActivity {   
 	
-	private static int HANDLE_SHOWLOADING	= 1;
-	private static int HANDLE_HIDELOADING	= 2; 
-	private static int HANDLE_SHOWTIPS		= 3; 
+	private static int HANDLE_SHOWLOADING = 1;
+	private static int HANDLE_HIDELOADING = 2; 
+	private static int HANDLE_SHOWTIPS = 3; 
 	
 	private List<Lead> leads = null;
 	private ProgressDialog progressDialog = null;
@@ -47,19 +47,19 @@ public class SendInvitationsView extends ListActivity {
     
 	
 	@Override
-    public void onCreate(Bundle savedInstanceState) {
+	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-        setTitle("Leads");
+		setTitle("Leads");
+		
+		ListView listView = getListView();
+		listView.setItemsCanFocus(false);
+		listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
         
-        ListView listView = getListView();
-        listView.setItemsCanFocus(false);
-        listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
+		progressDialog = new ProgressDialog(this);
+		progressDialog.setMessage("Please Wait...");
         
-        progressDialog = new ProgressDialog(this);
-        progressDialog.setMessage("Please Wait...");
-        
-        leads = Discoverer.getInstance().getCachedLeads();
-        populateLeads();
+		leads = Discoverer.getInstance().getCachedLeads();
+		populateLeads();
 	}
     
 	@Override
