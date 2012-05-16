@@ -27,9 +27,9 @@ import android.util.Log;
  */
 public class Discoverer {
 	
-	private static final String AGE_PREFERENCES				= "age_preferences";
+	private static final String AGE_PREFERENCES 			= "age_preferences";
 	private static final String AGE_CURRENT_APP_KEY			= "current_app_key";
-	private static final String AGE_TAG_HOOK				= "Hook";
+	private static final String AGE_TAG_HOOK    			= "Hook";
 	private static final String AGE_DEFAULT_REFERRAL_MSG	= "I thought you might be interested in this app %app%, check it out here %link%";
 	
 	private static final String MSG_INSTALL_CODE_REQUIRED	= "Install code not found! Please call discover first.";
