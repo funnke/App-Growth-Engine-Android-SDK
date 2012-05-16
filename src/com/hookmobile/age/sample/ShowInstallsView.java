@@ -14,7 +14,7 @@ import com.hookmobile.age.Discoverer;
 
 public class ShowInstallsView extends ListActivity {   
     
-	private List<String> installs = null;
+	private List<String> installs;
 	
 	
 	@Override
