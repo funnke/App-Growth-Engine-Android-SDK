@@ -27,34 +27,34 @@ import android.util.Log;
  */
 public class Discoverer {
 	
-	private static final String AGE_PREFERENCES 			= "age_preferences";
-	private static final String AGE_CURRENT_APP_KEY			= "current_app_key";
-	private static final String AGE_TAG_HOOK    			= "Hook";
+	private static final String AGE_PREFERENCES         = "age_preferences";
+	private static final String AGE_CURRENT_APP_KEY     = "current_app_key";
+	private static final String AGE_TAG_HOOK            = "Hook";
 	
 	private static final String MSG_DEFAULT_REFERRAL    	= "I thought you might be interested in this app %app%, check it out here %link%";
 	private static final String MSG_INSTALL_CODE_REQUIRED	= "Install code not found! Please call discover first.";
 	
-	private static final String P_ADDRESSBOOK       		= "addressBook";
-	private static final String P_APP_KEY           		= "appKey";
-	private static final String P_DATE              		= "date";
-	private static final String P_DEVICE_INFO       		= "deviceInfo";
-	private static final String P_INSTALL_CODE      		= "installCode";
-	private static final String P_LEADS             		= "leads";
-	private static final String P_NAME              		= "name";
-	private static final String P_OS_TYPE           		= "osType";
-	private static final String P_PHONE             		= "phone";
-	private static final String P_REFERRAL_ID       		= "referralId";
-	private static final String P_REFERRAL_MESSAGE  		= "referralMessage";
-	private static final String P_REFERRAL_TEMPLATE 		= "referralTemplate";
-	private static final String P_REFERRALS         		= "referrals";
-	private static final String P_REFERENCE         		= "reference";
-	private static final String P_SEND_NOW          		= "sendNow";
-	private static final String P_TOTAL_CLICK_THROUGH		= "totalClickThrough";
-	private static final String P_TOTAL_INVITEE     		= "totalInvitee";
-	private static final String P_USE_VIRTUAL_NUMBER		= "useVirtualNumber";
-	private static final String P_VERIFIED          		= "verified";
-	private static final String P_VERIFY_MESSAGE    		= "verifyMessage";
-	private static final String P_VERIFY_MT         		= "verifyMt";
+	private static final String P_ADDRESSBOOK           = "addressBook";
+	private static final String P_APP_KEY               = "appKey";
+	private static final String P_DATE                  = "date";
+	private static final String P_DEVICE_INFO           = "deviceInfo";
+	private static final String P_INSTALL_CODE          = "installCode";
+	private static final String P_LEADS                 = "leads";
+	private static final String P_NAME                  = "name";
+	private static final String P_OS_TYPE               = "osType";
+	private static final String P_PHONE                 = "phone";
+	private static final String P_REFERRAL_ID           = "referralId";
+	private static final String P_REFERRAL_MESSAGE      = "referralMessage";
+	private static final String P_REFERRAL_TEMPLATE     = "referralTemplate";
+	private static final String P_REFERRALS             = "referrals";
+	private static final String P_REFERENCE             = "reference";
+	private static final String P_SEND_NOW              = "sendNow";
+	private static final String P_TOTAL_CLICK_THROUGH   = "totalClickThrough";
+	private static final String P_TOTAL_INVITEE         = "totalInvitee";
+	private static final String P_USE_VIRTUAL_NUMBER    = "useVirtualNumber";
+	private static final String P_VERIFIED              = "verified";
+	private static final String P_VERIFY_MESSAGE        = "verifyMessage";
+	private static final String P_VERIFY_MT             = "verifyMt";
 	
 	private static Discoverer instance;
 	private static Context context;
