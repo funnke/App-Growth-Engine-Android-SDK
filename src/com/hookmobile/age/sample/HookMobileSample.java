@@ -19,7 +19,7 @@ import com.hookmobile.age.R;
 
 public class HookMobileSample extends Activity implements OnClickListener {
 	
-	private String appKey = "d435c177-a12b-4914-851e-b2f8d012b975";
+	private String appKey = "Your-App-Key";
 	
 	private static int HANDLE_SHOW_LOADING = 1;
 	private static int HANDLE_HIDE_LOADING = 2; 
@@ -146,7 +146,7 @@ public class HookMobileSample extends Activity implements OnClickListener {
 				
 				try {
 					String message = Discoverer.getInstance().verifyDevice(false, null);
-					String number = Discoverer.getSmsDest();
+					String number = Discoverer.getVirtualNumber();
 					
 					handler.sendEmptyMessage(HANDLE_VERIFICATION_STATUS_ENABLE);
 					

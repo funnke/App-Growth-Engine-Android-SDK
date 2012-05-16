@@ -60,7 +60,7 @@ public class Discoverer {
 	private static Context context;
 	
 	private static String server = "https://age.hookmobile.com";
-	private static String smsDest = "+13025175040";
+	private static String virtualNumber = "+13025175040";
 	
 	private String appKey;
 	private String devicePhone;
@@ -78,30 +78,26 @@ public class Discoverer {
      * @param context the Android context. 
      * @param appKey the app key you register on Hook Mobile developers portal.
      */
-    public static void activate(Context context, String appKey) {
-    	Discoverer.context = context.getApplicationContext();
-    	Discoverer.instance = new Discoverer(appKey);
-    }
+	public static void activate(Context context, String appKey) {
+		Discoverer.context = context.getApplicationContext();
+		Discoverer.instance = new Discoverer(appKey);
+	}
     
     /**
      * Gets the Discoverer. 
      * 
      * @return the Discoverer.
      */
-    public static Discoverer getInstance() {
-    	if(instance != null) {
-    		return instance;
-    	}
-    	
-    	throw new IllegalStateException("Please activate first.");
-    }
+	public static Discoverer getInstance() {
+		if(instance != null) {
+			return instance;
+		}
+		
+		throw new IllegalStateException("Please activate first.");
+	}
     
-    public static void setSmsDest(String smsDest) {
-    	Discoverer.smsDest = smsDest;
-    }
-    
-    public static String getSmsDest() {
-    	return smsDest;
+    public static String getVirtualNumber() {
+    	return virtualNumber;
     }
     
     private Discoverer(String appKey) {
