@@ -72,22 +72,22 @@ public class Discoverer {
 	private List<Referral> cachedReferrals;
     
     
-    /**
-     * Activates the AGE service.
-     * 
-     * @param context the Android context. 
-     * @param appKey the app key you register on Hook Mobile developers portal.
-     */
+	/**
+	 * Activates the AGE service.
+	 * 
+	 * @param context the Android context. 
+	 * @param appKey the app key you register on Hook Mobile developers portal.
+	 */
 	public static void activate(Context context, String appKey) {
 		Discoverer.context = context.getApplicationContext();
 		Discoverer.instance = new Discoverer(appKey);
 	}
     
-    /**
-     * Gets the Discoverer. 
-     * 
-     * @return the Discoverer.
-     */
+	/**
+	 * Gets the Discoverer. 
+	 * 
+	 * @return the Discoverer.
+	 */
 	public static Discoverer getInstance() {
 		if(instance != null) {
 			return instance;
@@ -96,42 +96,42 @@ public class Discoverer {
 		throw new IllegalStateException("Please activate first.");
 	}
     
-    /**
-     * Gets the Hook Moible virtual number.
-     * 
-     * @return the virtual number.
-     */
-    public static String getVirtualNumber() {
-    	return virtualNumber;
-    }
+	/**
+	 * Gets the Hook Moible virtual number.
+	 * 
+	 * @return the virtual number.
+	 */
+	public static String getVirtualNumber() {
+		return virtualNumber;
+	}
     
-    private Discoverer(String appKey) {
-    	if(appKey == null) {
-    		throw new IllegalStateException("App key cannot be null.");
-    	}
+	private Discoverer(String appKey) {
+		if(appKey == null) {
+			throw new IllegalStateException("App key cannot be null.");
+		}
     	
-    	this.appKey = appKey;
-    	this.devicePhone = queryDevicePhone(context);
-    	this.installCode = loadInstallCode();
+		this.appKey = appKey;
+		this.devicePhone = queryDevicePhone(context);
+		this.installCode = loadInstallCode();
     	
-    	saveCurrentAppKey(appKey);
+		saveCurrentAppKey(appKey);
     	
-    	Log.i(AGE_TAG_HOOK, "devicePhone: "+ devicePhone);
-    	Log.i(AGE_TAG_HOOK, "installCode: "+ installCode);
-    }
+		Log.i(AGE_TAG_HOOK, "devicePhone: "+ devicePhone);
+		Log.i(AGE_TAG_HOOK, "installCode: "+ installCode);
+	}
     
-    /**
-     * Gets this device's phone number.
-     * 
-     * @return the phone number.
-     */
-    public String getDevicePhone() {
-    	if(devicePhone == null) {
-    		devicePhone = queryDevicePhone(context);
-    	}
+	/**
+	 * Gets this device's phone number.
+	 * 
+	 * @return the phone number.
+	 */
+	public String getDevicePhone() {
+		if(devicePhone == null) {
+			devicePhone = queryDevicePhone(context);
+		}
     	
-    	return devicePhone;
-    }
+		return devicePhone;
+	}
 
 	public String getInstallCode() {
 		if(installCode == null) {
