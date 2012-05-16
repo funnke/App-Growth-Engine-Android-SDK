@@ -66,7 +66,6 @@ public class Discoverer {
 	private String devicePhone;
 	private String installCode;
 	
-	private long lastReferralId;
 	private List<Lead> cachedLeads;
 	private List<String> cachedInstalls;
 	private List<Referral> cachedReferrals;
@@ -133,6 +132,11 @@ public class Discoverer {
 		return devicePhone;
 	}
 
+	/**
+	 * Gets the unique code associated with this install. The install code is obtained the first time discover method is invoked.
+	 * 
+	 * @return the install code.
+	 */
 	public String getInstallCode() {
 		if(installCode == null) {
 			installCode = loadInstallCode();
@@ -141,14 +145,11 @@ public class Discoverer {
 		return installCode;
 	}
 	
-	public long getLastReferralId() {
-		if(lastReferralId > 0) {
-			return lastReferralId;
-		}
-		
-		return -1;
-	}
-	
+	/**
+	 * Gets the last queried leads. 
+	 * 
+	 * @return the cached leads.
+	 */
 	public List<Lead> getCachedLeads() {
 		if(cachedLeads != null) {
 			return cachedLeads;
@@ -157,6 +158,11 @@ public class Discoverer {
 		return Collections.<Lead>emptyList();
 	}
 
+	/**
+	 * Gets the last queried installs.
+	 * 
+	 * @return the cached installs.
+	 */
 	public List<String> getCachedInstalls() {
 		if(cachedInstalls != null) {
 			return cachedInstalls;
@@ -165,6 +171,11 @@ public class Discoverer {
 		return Collections.<String>emptyList();
 	}
 
+	/**
+	 * Gets the last queried referrals.
+	 * 
+	 * @return the cached referrals.
+	 */
 	public List<Referral> getCachedReferrals() {
 		if(cachedReferrals != null) {
 			return cachedReferrals;
@@ -468,7 +479,7 @@ public class Discoverer {
         		
 				if(response.isSuccess()) {
 					JSONObject json = response.getJson();
-					lastReferralId = json.isNull(P_REFERRAL_ID) ? -1 : json.getLong(P_REFERRAL_ID);
+					long referralId = json.isNull(P_REFERRAL_ID) ? -1 : json.getLong(P_REFERRAL_ID);
 					String referralMessage = json.isNull(P_REFERRAL_MESSAGE) ? MSG_DEFAULT_REFERRAL : json.getString(P_REFERRAL_MESSAGE);
         			
 					if(! useVirtualNumber) {
@@ -479,7 +490,7 @@ public class Discoverer {
 						}
 					}
     				
-					return lastReferralId;
+					return referralId;
 				}
 				else {
 					throw new AgeException(response.getCode(), response.getMessage());
