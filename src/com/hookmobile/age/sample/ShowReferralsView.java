@@ -17,7 +17,7 @@ import com.hookmobile.age.Referral;
 
 public class ShowReferralsView extends ListActivity {   
 	
-	private List<Referral> referrals = null;
+	private List<Referral> referrals;
     
 	private BaseAdapter referralsAdapter = new BaseAdapter()  {        
 		@Override
@@ -57,13 +57,13 @@ public class ShowReferralsView extends ListActivity {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-        setTitle("Referrals");
-        
-        final ListView listView = getListView();
-        referrals = Discoverer.getInstance().getCachedReferrals();
-        
-        listView.setItemsCanFocus(false);
-        listView.setAdapter(referralsAdapter);
+		setTitle("Referrals");
+		
+		final ListView listView = getListView();
+		referrals = Discoverer.getInstance().getCachedReferrals();
+		
+		listView.setItemsCanFocus(false);
+		listView.setAdapter(referralsAdapter);
 	}
     
 }
