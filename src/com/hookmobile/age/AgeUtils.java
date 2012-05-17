@@ -127,7 +127,7 @@ public class AgeUtils {
      * Looks up contact name in the address book by the phone number.
      * 
      * @param context the Android context.
-     * @param the phone phone number to look up.
+     * @param phone the phone number to look up.
      * @return a contact name.
      */
     public static String lookupNameByPhone(Context context, String phone) {
