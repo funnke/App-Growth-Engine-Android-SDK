@@ -188,7 +188,7 @@ public class Discoverer {
 
 	/**
 	 * Verifies user's device phone. There are two types of verification, MT and MO.
-	 * In MT verification, a confirmation link will be sent to user's phone. user is then verified by clicing the link.
+	 * In MT verification, a confirmation link will be sent to user's phone. user is then verified by clicking the link.
 	 * In MO verification, user will complete the verification by sending a verification message with an unique code.
 	 * This method returns the verification message.
 	 * 

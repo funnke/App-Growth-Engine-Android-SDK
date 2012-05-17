@@ -54,44 +54,6 @@ public class AgeUtils {
 														.toString();
 	
 	
-	/**
-	 * Submits a HTTP request with the form supplied.
-	 * 
-	 * @param url the URL to post.
-	 * @param form the request form.
-	 * @return a AgeResponse.
-	 * @throws ClientProtocolException
-	 * @throws IOException
-	 * @throws JSONException
-	 */
-	public static AgeResponse doPost(String url, List<NameValuePair> form) throws ClientProtocolException, IOException, JSONException {
-		AgeResponse result = new AgeResponse();
-		
-		BasicHttpParams params = new BasicHttpParams();
-		HttpConnectionParams.setConnectionTimeout(params, timeoutConnection);
-		HttpConnectionParams.setSoTimeout(params, timeoutSocket);
-		
-		HttpClient client = new DefaultHttpClient(params);
-		HttpPost post = new HttpPost(url);
-		post.setEntity(new UrlEncodedFormEntity(form, HTTP.UTF_8));
-		post.addHeader("Content-type", "application/x-www-form-urlencoded");
-		
-		HttpResponse response = client.execute(post);
-		
-		if(response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
-			String responseText = new String(EntityUtils.toByteArray(response.getEntity()));
-			JSONObject json = new JSONObject(responseText);
-			result.setJson(json);
-			result.setCode(json.isNull(P_STATUS) ? -1 : json.getInt(P_STATUS));
-			result.setMessage(json.isNull(P_DESCRIPTION) ? null : json.getString(P_DESCRIPTION));
-		}
-		else {
-			result.setMessage(response.getStatusLine().getReasonPhrase());
-		}
-		
-		return result;
-	}
-	
     /**
      * Normalizes the phone number format.
      * 
@@ -243,18 +205,6 @@ public class AgeUtils {
     }
     
     /**
-     * Gets the phone number of this device.
-     * 
-     * @param context the Android context.
-     * @return this device's phone number.
-     */
-    public static String queryDevicePhone(Context context) {
-    	TelephonyManager manager = (TelephonyManager)context.getSystemService(Context.TELEPHONY_SERVICE); 
-    	
-    	return normalizePhone(manager.getLine1Number());
-    }
-    
-    /**
      * Checks if this device supports SMS.
      * 
      * @param context the Android context.
@@ -270,19 +220,47 @@ public class AgeUtils {
     	return false;
     }
     
-    /**
-     * Checks if the input string is null or empty.
-     * 
-     * @param str the input string.
-     * @return true if the string is null or empty; false otherwise.
-     */
-    public static boolean isEmptyStr(String str) {
+    static AgeResponse doPost(String url, List<NameValuePair> form) throws ClientProtocolException, IOException, JSONException {
+		AgeResponse result = new AgeResponse();
+		
+		BasicHttpParams params = new BasicHttpParams();
+		HttpConnectionParams.setConnectionTimeout(params, timeoutConnection);
+		HttpConnectionParams.setSoTimeout(params, timeoutSocket);
+		
+		HttpClient client = new DefaultHttpClient(params);
+		HttpPost post = new HttpPost(url);
+		post.setEntity(new UrlEncodedFormEntity(form, HTTP.UTF_8));
+		post.addHeader("Content-type", "application/x-www-form-urlencoded");
+		
+		HttpResponse response = client.execute(post);
+		
+		if(response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
+			String responseText = new String(EntityUtils.toByteArray(response.getEntity()));
+			JSONObject json = new JSONObject(responseText);
+			result.setJson(json);
+			result.setCode(json.isNull(P_STATUS) ? -1 : json.getInt(P_STATUS));
+			result.setMessage(json.isNull(P_DESCRIPTION) ? null : json.getString(P_DESCRIPTION));
+		}
+		else {
+			result.setMessage(response.getStatusLine().getReasonPhrase());
+		}
+		
+		return result;
+	}
+	
+    static boolean isEmptyStr(String str) {
     	if(str == null || str.length() == 0) {
     		return true;
     	}
     	
     	return false;
 	}
+
+    static String queryDevicePhone(Context context) {
+    	TelephonyManager manager = (TelephonyManager)context.getSystemService(Context.TELEPHONY_SERVICE); 
+    	
+    	return normalizePhone(manager.getLine1Number());
+    }
     
     private static Cursor openContactCursor(Context context) {
     	return context.getContentResolver().query(  
