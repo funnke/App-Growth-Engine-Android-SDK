@@ -2,7 +2,7 @@ package com.hookmobile.age;
 
 import static com.hookmobile.age.AgeUtils.doPost;
 import static com.hookmobile.age.AgeUtils.getAddressbook;
-import static com.hookmobile.age.AgeUtils.getDeviceOsInfo;
+import static com.hookmobile.age.AgeUtils.getDeviceInfo;
 import static com.hookmobile.age.AgeUtils.isEmptyStr;
 import static com.hookmobile.age.AgeUtils.isSmsSupported;
 import static com.hookmobile.age.AgeUtils.queryDevicePhone;
@@ -23,7 +23,9 @@ import android.telephony.SmsManager;
 import android.util.Log;
 
 /**
- * The Discoverer class is the main class that provides the AGE service.
+ * This is the central class that provides the AGE services.
+ * Device verification, smart invitation, referrals tracking, and installs query.
+ * You can also refer to Hook Mobile's <a href="http://hookmobile.com/android-tutorial.html" target="_blank">Android Tutorial</a> for more information.
  */
 public class Discoverer {
 	
@@ -203,7 +205,7 @@ public class Discoverer {
 			form.add(new BasicNameValuePair(P_APP_KEY, getAppKey()));
 			form.add(new BasicNameValuePair(P_PHONE, getDevicePhone()));
 			form.add(new BasicNameValuePair(P_VERIFY_MT, String.valueOf(useMtVerification)));
-			form.add(new BasicNameValuePair(P_DEVICE_INFO, getDeviceOsInfo(context)));
+			form.add(new BasicNameValuePair(P_DEVICE_INFO, getDeviceInfo(context)));
 			if(installCode != null) {
 				form.add(new BasicNameValuePair(P_INSTALL_CODE, installCode));
 			}
@@ -286,7 +288,7 @@ public class Discoverer {
 			form.add(new BasicNameValuePair(P_APP_KEY, getAppKey()));
 			form.add(new BasicNameValuePair(P_PHONE, getDevicePhone()));
 			form.add(new BasicNameValuePair(P_ADDRESSBOOK, getAddressbook(context)));
-			form.add(new BasicNameValuePair(P_DEVICE_INFO, getDeviceOsInfo(context)));
+			form.add(new BasicNameValuePair(P_DEVICE_INFO, getDeviceInfo(context)));
 			if(installCode != null) {
 				form.add(new BasicNameValuePair(P_INSTALL_CODE, installCode));
 			}
@@ -370,7 +372,7 @@ public class Discoverer {
 	}
     
 	/**
-	 * Gets a list of friends who have also installed the app. There are three query modes: <br/>
+	 * Gets a list of friends who have also installed the app. There are three query modes: <br/><br/>
 	 * 1. Forward - Find contacts within your address book who has the same app. <br/>
 	 * 2. Backward - Find other app users who has your phone number in their address book. <br/>
 	 * 3. Mutual - Find contacts within your address book who has the same app and who also has your contact in his/her address book.
@@ -427,7 +429,8 @@ public class Discoverer {
 	}
     
 	/**
-	 * Sends a referral message to the specified phone numbers.
+	 * Sends a referral message to the specified phone numbers. 
+	 * It is typically a list selected from the leads returned by queryLeads method.
 	 * 
 	 * @param phones the recipients of the invitation.
 	 * @param useVirtualNumber true to send via Hook Mobile virtual number; false to send via user's phone.
@@ -441,6 +444,7 @@ public class Discoverer {
 
 	/**
 	 * Sends a referral message to the specified phone numbers.
+	 * It is typically a list selected from the leads returned by queryLeads method.
 	 * 
 	 * @param phones the recipients of the invitation.
 	 * @param useVirtualNumber true to send via Hook Mobile virtual number; false to send via user's phone.

@@ -30,6 +30,9 @@ import android.telephony.TelephonyManager;
 
 import com.hookmobile.age.Discoverer.AgeResponse;
 
+/**
+ * Provides utility methods for AGE services and the sample app.
+ */
 public class AgeUtils {
 	
 	private static final String P_STATUS		= "status";
@@ -51,6 +54,16 @@ public class AgeUtils {
 														.toString();
 	
 	
+	/**
+	 * Submits a HTTP request with the form supplied.
+	 * 
+	 * @param url the URL to post.
+	 * @param form the request form.
+	 * @return a AgeResponse.
+	 * @throws ClientProtocolException
+	 * @throws IOException
+	 * @throws JSONException
+	 */
 	public static AgeResponse doPost(String url, List<NameValuePair> form) throws ClientProtocolException, IOException, JSONException {
 		AgeResponse result = new AgeResponse();
 		
@@ -79,6 +92,12 @@ public class AgeUtils {
 		return result;
 	}
 	
+    /**
+     * Normalizes the phone number format.
+     * 
+     * @param number the input phone number.
+     * @return a normalized phone number.
+     */
     public static String normalizePhone(String number) {
     	if(number != null && number.length() > 0) {
     		if(number.charAt(0) == '+') {
@@ -104,6 +123,13 @@ public class AgeUtils {
     	}
     }
 
+    /**
+     * Looks up contact name in the address book by the phone number.
+     * 
+     * @param context the Android context.
+     * @param the phone phone number to look up.
+     * @return a contact name.
+     */
     public static String lookupNameByPhone(Context context, String phone) {
     	Uri uri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(phone));
     	String[] projection = new String[] { ContactsContract.Contacts.DISPLAY_NAME, ContactsContract.Contacts._ID };
@@ -125,6 +151,12 @@ public class AgeUtils {
     	return phone;
     }
     
+    /**
+     * Gets the entire address book in JSON format.
+     * 
+     * @param context the Android context.
+     * @return a JSON representation of the address book.
+     */
     public static String getAddressbook(Context context) {    	
     	JSONArray addressBook = new JSONArray();
         Cursor cursor = openContactCursor(context);
@@ -177,7 +209,13 @@ public class AgeUtils {
         return addressBook.toString();
     }
     
-    public static String getDeviceOsInfo(Context context) {
+    /**
+     * Gets this device information in JSON format.
+     * 
+     * @param context the Android context.
+     * @return a JSON representation of this device information.
+     */
+    public static String getDeviceInfo(Context context) {
     	String osVersion = android.os.Build.VERSION.RELEASE; 
     	String brand = android.os.Build.BRAND; 
     	String product = android.os.Build.PRODUCT; 
@@ -204,12 +242,24 @@ public class AgeUtils {
         return deviceObj.toString();
     }
     
+    /**
+     * Gets the phone number of this device.
+     * 
+     * @param context the Android context.
+     * @return this device's phone number.
+     */
     public static String queryDevicePhone(Context context) {
     	TelephonyManager manager = (TelephonyManager)context.getSystemService(Context.TELEPHONY_SERVICE); 
     	
     	return normalizePhone(manager.getLine1Number());
     }
     
+    /**
+     * Checks if this device supports SMS.
+     * 
+     * @param context the Android context.
+     * @return true if this device is SMS capable; false otherwise.
+     */
     public static boolean isSmsSupported(Context context) {
     	PackageManager manager = context.getPackageManager();
     	
@@ -220,6 +270,12 @@ public class AgeUtils {
     	return false;
     }
     
+    /**
+     * Checks if the input string is null or empty.
+     * 
+     * @param str the input string.
+     * @return true if the string is null or empty; false otherwise.
+     */
     public static boolean isEmptyStr(String str) {
     	if(str == null || str.length() == 0) {
     		return true;

@@ -19,6 +19,11 @@ public class AgeException extends Exception {
 		super(cause);
 	}
 
+	/**
+	 * Gets AGE status code.
+	 * 
+	 * @return the status code.
+	 */
 	public int getCode() {
 		return code;
 	}
