@@ -1,0 +1,6 @@
+1.0.0
+ * AGE Android SDK created. Services include:
+   - Device verification.
+   - Smart invitation.
+   - Referrals tracking.
+   - Installs query.
