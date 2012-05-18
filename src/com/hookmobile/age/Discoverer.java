@@ -276,7 +276,7 @@ public class Discoverer {
     
 	/**
 	 * Submits a discovery request. User's address book will be securely uploaded to AGE server for the analysis.
-	 * It might take a minute for AGE to perform device detection and data mining.
+	 * It takes AGE up to a couple of minutes to perform device detection and data mining.
 	 * 
 	 * @throws AgeException if the AGE request failed.
 	 */
