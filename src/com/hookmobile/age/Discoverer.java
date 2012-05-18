@@ -200,7 +200,7 @@ public class Discoverer {
 	public String verifyDevice(boolean useMtVerification, String name) throws AgeException {
 		try {
 			String installCode = getInstallCode();
-			String url = server + "/newverify";
+			String url = server + "/verifydevice";
 			List<NameValuePair> form = new ArrayList<NameValuePair>();
 			form.add(new BasicNameValuePair(P_APP_KEY, getAppKey()));
 			form.add(new BasicNameValuePair(P_PHONE, getDevicePhone()));
@@ -246,7 +246,7 @@ public class Discoverer {
 			String installCode = getInstallCode();
         	
 			if(installCode != null) {
-				String url = server + "/queryverify";
+				String url = server + "/isverified";
 				List<NameValuePair> form = new ArrayList<NameValuePair>();
 				form.add(new BasicNameValuePair(P_APP_KEY, getAppKey()));
 				form.add(new BasicNameValuePair(P_INSTALL_CODE, installCode));
@@ -283,7 +283,7 @@ public class Discoverer {
 	public void discover() throws AgeException {
 		try {
 			String installCode = getInstallCode();
-			String url = server + "/newleads";
+			String url = server + "/discover";
 			List<NameValuePair> form = new ArrayList<NameValuePair>();
 			form.add(new BasicNameValuePair(P_APP_KEY, getAppKey()));
 			form.add(new BasicNameValuePair(P_PHONE, getDevicePhone()));
