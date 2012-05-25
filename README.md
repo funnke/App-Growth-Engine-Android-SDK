@@ -6,7 +6,7 @@ This open source Java library allows you to integrate AGE into your Android appl
 
 # Getting Started
 
-See our <a href="http://hookmobile.com/android-tutorial.html">Android SDK Getting Started Guide</a>
+See our <a href="http://hookmobile.com/android-tutorial.html" target="_blank">Android SDK Getting Started Guide</a>
 
 
 # Sample Application
