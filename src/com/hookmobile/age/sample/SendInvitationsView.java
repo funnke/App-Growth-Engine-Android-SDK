@@ -120,7 +120,7 @@ public class SendInvitationsView extends ListActivity {
 				
 				if(phones.size() > 0) {
 					try {
-						Discoverer.getInstance().newReferral(phones, true, null);
+						Discoverer.getInstance().newReferral(phones, true, "John");
 						
 						showMessage("Referral Success");
 					}
