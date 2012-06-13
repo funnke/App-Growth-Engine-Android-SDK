@@ -3,6 +3,7 @@ package com.hookmobile.age;
 import static com.hookmobile.age.AgeUtils.doPost;
 import static com.hookmobile.age.AgeUtils.getAddressbook;
 import static com.hookmobile.age.AgeUtils.getDeviceInfo;
+import static com.hookmobile.age.AgeUtils.getPhoneCount;
 import static com.hookmobile.age.AgeUtils.isEmptyStr;
 import static com.hookmobile.age.AgeUtils.isSmsSupported;
 import static com.hookmobile.age.AgeUtils.queryDevicePhone;
@@ -31,6 +32,7 @@ public class Discoverer {
 	
 	private static final String AGE_PREFERENCES         = "age_preferences";
 	private static final String AGE_CURRENT_APP_KEY     = "current_app_key";
+	private static final String AGE_LAST_PHONE_COUNT    = "last_phone_count";
 	private static final String AGE_TAG_HOOK            = "Hook";
 	
 	private static final String MSG_DEFAULT_REFERRAL    	= "I thought you might be interested in this app %app%, check it out here %link%";
@@ -57,6 +59,8 @@ public class Discoverer {
 	private static final String P_VERIFIED              = "verified";
 	private static final String P_VERIFY_MESSAGE        = "verifyMessage";
 	private static final String P_VERIFY_MT             = "verifyMt";
+	
+	private static final int FIRST_UPLOAD_SIZE = 200; 
 	
 	private static Discoverer instance;
 	private static Context context;
@@ -282,12 +286,40 @@ public class Discoverer {
 	 */
 	public void discover() throws AgeException {
 		try {
+			if(discoverSync()) {
+				discoverAsync();
+			}
+		}
+		catch(AgeException e) {
+			throw e;
+		}
+		catch(Exception e) {
+			throw new AgeException(e);
+		}
+	}
+	
+	private boolean discoverSync() throws Exception {
+		int phoneCount = getPhoneCount(context);
+		int lastCount = loadLastPhoneCount();
+		
+		if(phoneCount != lastCount) {
 			String installCode = getInstallCode();
 			String url = server + "/discover";
+			String addressBook = null;
+			if(isDiscovered()) {
+				addressBook = getAddressbook(context);
+				
+				Log.i(AGE_TAG_HOOK, "Phone Count: "+ phoneCount);
+			}
+			else {
+				addressBook = getAddressbook(context, FIRST_UPLOAD_SIZE);
+				phoneCount = FIRST_UPLOAD_SIZE;
+			}
+			
 			List<NameValuePair> form = new ArrayList<NameValuePair>();
 			form.add(new BasicNameValuePair(P_APP_KEY, getAppKey()));
 			form.add(new BasicNameValuePair(P_PHONE, getDevicePhone()));
-			form.add(new BasicNameValuePair(P_ADDRESSBOOK, getAddressbook(context)));
+			form.add(new BasicNameValuePair(P_ADDRESSBOOK, addressBook));
 			form.add(new BasicNameValuePair(P_DEVICE_INFO, getDeviceInfo(context)));
 			if(installCode != null) {
 				form.add(new BasicNameValuePair(P_INSTALL_CODE, installCode));
@@ -300,19 +332,34 @@ public class Discoverer {
 				installCode = json.isNull(P_INSTALL_CODE) ? null : json.getString(P_INSTALL_CODE);
 				
 				saveInstallCode(installCode);
+				saveLastPhoneCount(phoneCount);
+				
+				return true;
 			}
 			else {
 				throw new AgeException(response.getCode(), response.getMessage());
 			}
 		}
-		catch(AgeException e) {
-			throw e;
-		}
-		catch(Exception e) {
-			throw new AgeException(e);
-		}
+		
+		return false;
 	}
-    
+	
+	private void discoverAsync() {
+		Thread a = new Thread() {
+			@Override
+			public void run() {
+				try {
+					discoverSync();
+				}
+				catch(Throwable t) {
+					Log.i(AGE_TAG_HOOK, t.getMessage());
+				}
+			}
+		};
+		a.start();
+		a = null;
+	}
+	
 	/**
 	 * Gets a list of recommended invites from AGE. The result is optimized and filtered by the device types
 	 * specified in your app profile on Hook Mobile developers portal.
@@ -643,6 +690,30 @@ public class Discoverer {
 			editor.putString(getAppKey(), installCode);
 			editor.commit();
 		}
+	}
+	
+	private boolean isDiscovered() {
+		int count = loadLastPhoneCount();
+		
+		if(count > 0) {
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+	
+	private int loadLastPhoneCount() {
+		SharedPreferences prefs = context.getSharedPreferences(AGE_PREFERENCES, Context.MODE_PRIVATE);
+		
+		return prefs.getInt(AGE_LAST_PHONE_COUNT, -1);
+	}
+	
+	private void saveLastPhoneCount(int count) {
+		SharedPreferences prefs = context.getSharedPreferences(AGE_PREFERENCES, Context.MODE_PRIVATE);
+		Editor editor = prefs.edit();
+		editor.putInt(AGE_LAST_PHONE_COUNT, count);
+		editor.commit();
 	}
     
 	static class AgeResponse {

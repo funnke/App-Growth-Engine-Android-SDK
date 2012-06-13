@@ -114,16 +114,45 @@ public class AgeUtils {
     }
     
     /**
+     * Gets number of the phone in the address book.
+     * 
+     * @param context the Android context.
+     * @return the count.
+     */
+    public static int getPhoneCount(Context context) {
+    	Cursor cursor =  context.getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null, null, null, null);
+    	
+    	try {
+    		return cursor.getCount();
+    	}
+    	finally {
+    		cursor.close();
+    	}
+    }
+    
+    /**
      * Gets the entire address book in JSON format.
      * 
      * @param context the Android context.
      * @return a JSON representation of the address book.
      */
-    public static String getAddressbook(Context context) {    	
-    	JSONArray addressBook = new JSONArray();
-        Cursor cursor = openContactCursor(context);
+    public static String getAddressbook(Context context) {
+    	return getAddressbook(context, Integer.MAX_VALUE);
+    }
+    
+	/**
+	 * Gets contacts of the address book limited up to max size.
+	 * 
+	 * @param context the Android context.
+	 * @param limit the max size of contacts to fetch.
+	 * @return a JSON representation of the address book.
+	 */
+	public static String getAddressbook(Context context, int limit) {
+		JSONArray addressBook = new JSONArray();
+		Cursor cursor = openContactCursor(context);
+        boolean done = false;
         
-        if(cursor.moveToFirst()) {  
+		if(cursor.moveToFirst()) {  
             do { 
             	String contactId = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID));     
             	int phoneCount = cursor.getInt(cursor.getColumnIndex(ContactsContract.Contacts.HAS_PHONE_NUMBER));  
@@ -150,10 +179,19 @@ public class AgeUtils {
             				JSONObject contactObj = new JSONObject();
             				
             				try {
-            					contactObj.put("lastName", familyName != null ? familyName : "");
-            					contactObj.put("phone", normalizePhone(phoneNumber));
-            					contactObj.put("firstName", givenName != null ? givenName : "");
-            					addressBook.put(contactObj);
+            					String phone = normalizePhone(phoneNumber);
+            					
+            					if(phone.length() >= 10) {
+            						contactObj.put("lastName", familyName != null ? familyName : "");
+                					contactObj.put("phone", phone);
+                					contactObj.put("firstName", givenName != null ? givenName : "");
+                					addressBook.put(contactObj);
+                					
+                					if(addressBook.length() >= limit) {
+                						done = true;
+                						break;
+                					}
+            					}
             				}
             				catch(JSONException e) {
                             	
@@ -164,7 +202,7 @@ public class AgeUtils {
             		phoneCursor.close();
             	}
             }
-            while(cursor.moveToNext());  
+            while(cursor.moveToNext() && ! done);  
         }
         cursor.close();
         
