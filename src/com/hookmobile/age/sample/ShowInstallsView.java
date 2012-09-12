@@ -11,7 +11,6 @@ import android.widget.ListView;
 
 import com.hookmobile.age.Discoverer;
 
-
 public class ShowInstallsView extends ListActivity {   
     
 	private List<String> installs;
