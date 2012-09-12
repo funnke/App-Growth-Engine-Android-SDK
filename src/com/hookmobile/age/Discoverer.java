@@ -1,16 +1,50 @@
 package com.hookmobile.age;
 
-import static com.hookmobile.age.AgeUtils.doPost;
+import static com.hookmobile.age.AgeClient.doPost;
+import static com.hookmobile.age.AgeConstants.AGE_CURRENT_APP_KEY;
+import static com.hookmobile.age.AgeConstants.AGE_INSTALL_TOKEN;
+import static com.hookmobile.age.AgeConstants.AGE_LOG;
+import static com.hookmobile.age.AgeConstants.AGE_PREFERENCES;
+import static com.hookmobile.age.AgeConstants.E_DISCOVERY_EXPIRED;
+import static com.hookmobile.age.AgeConstants.P_ADDRESSBOOK;
+import static com.hookmobile.age.AgeConstants.P_ADDRESS_HASH;
+import static com.hookmobile.age.AgeConstants.P_APP_KEY;
+import static com.hookmobile.age.AgeConstants.P_DATE;
+import static com.hookmobile.age.AgeConstants.P_DEVICE_INFO;
+import static com.hookmobile.age.AgeConstants.P_INSTALL_CODE;
+import static com.hookmobile.age.AgeConstants.P_INSTALL_TOKEN;
+import static com.hookmobile.age.AgeConstants.P_LEADS;
+import static com.hookmobile.age.AgeConstants.P_MAC_ADDRESS;
+import static com.hookmobile.age.AgeConstants.P_NAME;
+import static com.hookmobile.age.AgeConstants.P_OS_TYPE;
+import static com.hookmobile.age.AgeConstants.P_PHONE;
+import static com.hookmobile.age.AgeConstants.P_REFERENCE;
+import static com.hookmobile.age.AgeConstants.P_REFERRALS;
+import static com.hookmobile.age.AgeConstants.P_REFERRAL_ID;
+import static com.hookmobile.age.AgeConstants.P_REFERRAL_MESSAGE;
+import static com.hookmobile.age.AgeConstants.P_SDK_VERSION;
+import static com.hookmobile.age.AgeConstants.P_SEND_NOW;
+import static com.hookmobile.age.AgeConstants.P_TAPJOY_UDID;
+import static com.hookmobile.age.AgeConstants.P_TOTAL_CLICK_THROUGH;
+import static com.hookmobile.age.AgeConstants.P_TOTAL_INVITEE;
+import static com.hookmobile.age.AgeConstants.P_USE_VIRTUAL_NUMBER;
+import static com.hookmobile.age.AgeConstants.P_VERIFIED;
+import static com.hookmobile.age.AgeConstants.P_VERIFY_MESSAGE;
+import static com.hookmobile.age.AgeConstants.P_VERIFY_MT;
+import static com.hookmobile.age.AgeUtils.getAddressHash;
 import static com.hookmobile.age.AgeUtils.getAddressbook;
 import static com.hookmobile.age.AgeUtils.getDeviceInfo;
 import static com.hookmobile.age.AgeUtils.getPhoneCount;
-import static com.hookmobile.age.AgeUtils.isEmptyStr;
+import static com.hookmobile.age.AgeUtils.isOnline;
 import static com.hookmobile.age.AgeUtils.isSmsSupported;
+import static com.hookmobile.age.AgeUtils.loadLastPhoneCount;
 import static com.hookmobile.age.AgeUtils.queryDevicePhone;
+import static com.hookmobile.age.AgeUtils.saveLastPhoneCount;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 import org.apache.http.NameValuePair;
 import org.apache.http.message.BasicNameValuePair;
@@ -23,6 +57,8 @@ import android.content.SharedPreferences.Editor;
 import android.telephony.SmsManager;
 import android.util.Log;
 
+import com.hookmobile.age.AgeClient.AgeResponse;
+
 /**
  * This is the central class that provides the AGE services.
  * Device verification, smart invitation, referrals tracking, and installs query.
@@ -30,47 +66,24 @@ import android.util.Log;
  */
 public class Discoverer {
 	
-	private static final String AGE_PREFERENCES         = "age_preferences";
-	private static final String AGE_CURRENT_APP_KEY     = "current_app_key";
-	private static final String AGE_LAST_PHONE_COUNT    = "last_phone_count";
-	private static final String AGE_TAG_HOOK            = "Hook";
-	
-	private static final String MSG_DEFAULT_REFERRAL    	= "I thought you might be interested in this app %app%, check it out here %link%";
-	private static final String MSG_INSTALL_CODE_REQUIRED	= "Install code not found! Please call discover first.";
-	
-	private static final String P_ADDRESSBOOK           = "addressBook";
-	private static final String P_APP_KEY               = "appKey";
-	private static final String P_DATE                  = "date";
-	private static final String P_DEVICE_INFO           = "deviceInfo";
-	private static final String P_INSTALL_CODE          = "installCode";
-	private static final String P_LEADS                 = "leads";
-	private static final String P_NAME                  = "name";
-	private static final String P_OS_TYPE               = "osType";
-	private static final String P_PHONE                 = "phone";
-	private static final String P_REFERRAL_ID           = "referralId";
-	private static final String P_REFERRAL_MESSAGE      = "referralMessage";
-	private static final String P_REFERRAL_TEMPLATE     = "referralTemplate";
-	private static final String P_REFERRALS             = "referrals";
-	private static final String P_REFERENCE             = "reference";
-	private static final String P_SEND_NOW              = "sendNow";
-	private static final String P_TOTAL_CLICK_THROUGH   = "totalClickThrough";
-	private static final String P_TOTAL_INVITEE         = "totalInvitee";
-	private static final String P_USE_VIRTUAL_NUMBER    = "useVirtualNumber";
-	private static final String P_VERIFIED              = "verified";
-	private static final String P_VERIFY_MESSAGE        = "verifyMessage";
-	private static final String P_VERIFY_MT             = "verifyMt";
+	private static final String AGE_SDK_VERSION = "android/1.0.2";
+	private static final String DEFAULT_REFERRAL = "I thought you might be interested in this app %app%, check it out here %link%";
+	private static final String INSTALL_CODE_REQUIRED = "Install code not found! Please call discover first.";
 	
 	private static final int FIRST_UPLOAD_SIZE = 200; 
+
+	private static String server = "https://age.hookmobile.com";
+	private static String virtualNumber = "+13025175040";
 	
 	private static Discoverer instance;
 	private static Context context;
 	
-	private static String server = "https://age.hookmobile.com";
-	private static String virtualNumber = "+13025175040";
+	private volatile long newInstallInvokeTime;
 	
 	private String appKey;
 	private String devicePhone;
 	private String installCode;
+	private String installToken;
 	
 	private List<Lead> cachedLeads;
 	private List<String> cachedInstalls;
@@ -86,6 +99,7 @@ public class Discoverer {
 	public static void activate(Context context, String appKey) {
 		Discoverer.context = context.getApplicationContext();
 		Discoverer.instance = new Discoverer(appKey);
+		Discoverer.instance.newInstall();
 	}
     
 	/**
@@ -118,11 +132,14 @@ public class Discoverer {
 		this.appKey = appKey;
 		this.devicePhone = queryDevicePhone(context);
 		this.installCode = loadInstallCode();
+		this.installToken = getInstallToken();
     	
-		saveCurrentAppKey(appKey);
+		saveCurrentAppKey(context, appKey);
     	
-		Log.i(AGE_TAG_HOOK, "devicePhone: "+ devicePhone);
-		Log.i(AGE_TAG_HOOK, "installCode: "+ installCode);
+		Log.i(AGE_LOG, "AGE SDK Version: "+ AGE_SDK_VERSION);
+		Log.i(AGE_LOG, "devicePhone: "+ devicePhone);
+		Log.i(AGE_LOG, "installCode: "+ installCode);
+		Log.i(AGE_LOG, "installToken: "+ installToken);
 	}
     
 	/**
@@ -139,7 +156,7 @@ public class Discoverer {
 	}
 
 	/**
-	 * Gets the unique code associated with this install. The install code is obtained the first time discover method is invoked.
+	 * Gets the unique code associated with this install.
 	 * 
 	 * @return the install code.
 	 */
@@ -189,7 +206,55 @@ public class Discoverer {
 		
 		return Collections.<Referral>emptyList();
 	}
-
+	
+	private void newInstall() {
+		TapjoyManager.init(context);
+		newInstallInvokeTime = System.currentTimeMillis();
+		
+		Thread a = new Thread() {
+			@Override
+			public void run() {
+				try {
+					String installCode = getInstallCode();
+					
+					Log.i(AGE_LOG, getAddressHash(context));
+					
+					if(installCode == null && isOnline(context)) {
+						String url = server + "/newinstall";
+						List<NameValuePair> form = new ArrayList<NameValuePair>();
+						form.add(new BasicNameValuePair(P_INSTALL_TOKEN, getInstallToken()));
+						form.add(new BasicNameValuePair(P_APP_KEY, getAppKey()));
+						form.add(new BasicNameValuePair(P_PHONE, getDevicePhone()));
+						form.add(new BasicNameValuePair(P_TAPJOY_UDID, TapjoyManager.getTapjoyUDID()));
+						form.add(new BasicNameValuePair(P_MAC_ADDRESS, TapjoyManager.getMacAddress()));
+						form.add(new BasicNameValuePair(P_ADDRESS_HASH, getAddressHash(context)));
+						form.add(new BasicNameValuePair(P_SDK_VERSION, AGE_SDK_VERSION));
+						form.add(new BasicNameValuePair(P_DEVICE_INFO, getDeviceInfo(context)));
+						
+						AgeResponse response = doPost(url, form);
+						
+						if(response.isSuccess()) {
+							JSONObject json = response.getJson();
+							installCode = json.isNull(P_INSTALL_CODE) ? null : json.getString(P_INSTALL_CODE);
+							
+							saveInstallCode(installCode);
+						}
+						else {
+							Log.w(AGE_LOG, response.getMessage());
+						}
+					}
+				}
+				catch(Throwable t) {
+					Log.i(AGE_LOG, t.getMessage());
+				}
+				
+				newInstallInvokeTime = 0;
+			}
+		};
+		a.start();
+		a = null;
+	}
+	
 	/**
 	 * Verifies user's device phone. There are two types of verification, MT and MO.
 	 * In MT verification, a confirmation link will be sent to user's phone. user is then verified by clicking the link.
@@ -203,11 +268,18 @@ public class Discoverer {
 	 */
 	public String verifyDevice(boolean useMtVerification, String name) throws AgeException {
 		try {
+			waitForNewInstall();
+			
 			String installCode = getInstallCode();
 			String url = server + "/verifydevice";
 			List<NameValuePair> form = new ArrayList<NameValuePair>();
+			form.add(new BasicNameValuePair(P_INSTALL_TOKEN, getInstallToken()));
 			form.add(new BasicNameValuePair(P_APP_KEY, getAppKey()));
 			form.add(new BasicNameValuePair(P_PHONE, getDevicePhone()));
+			form.add(new BasicNameValuePair(P_TAPJOY_UDID, TapjoyManager.getTapjoyUDID()));
+			form.add(new BasicNameValuePair(P_MAC_ADDRESS, TapjoyManager.getMacAddress()));
+			form.add(new BasicNameValuePair(P_ADDRESS_HASH, getAddressHash(context)));
+			form.add(new BasicNameValuePair(P_SDK_VERSION, AGE_SDK_VERSION));
 			form.add(new BasicNameValuePair(P_VERIFY_MT, String.valueOf(useMtVerification)));
 			form.add(new BasicNameValuePair(P_DEVICE_INFO, getDeviceInfo(context)));
 			if(installCode != null) {
@@ -299,26 +371,37 @@ public class Discoverer {
 	}
 	
 	private boolean discoverSync() throws Exception {
+		waitForNewInstall();
+		
 		int phoneCount = getPhoneCount(context);
-		int lastCount = loadLastPhoneCount();
+		int lastCount = loadLastPhoneCount(context);
 		
 		if(phoneCount != lastCount) {
 			String installCode = getInstallCode();
 			String url = server + "/discover";
 			String addressBook = null;
 			if(isDiscovered()) {
-				addressBook = getAddressbook(context);
+				addressBook = getAddressbook(context, Integer.MAX_VALUE, true);
 				
-				Log.i(AGE_TAG_HOOK, "Phone Count: "+ phoneCount);
+				Log.i(AGE_LOG, "Phone Count: "+ phoneCount);
 			}
 			else {
 				addressBook = getAddressbook(context, FIRST_UPLOAD_SIZE);
-				phoneCount = FIRST_UPLOAD_SIZE;
+				
+				if(phoneCount > FIRST_UPLOAD_SIZE) {
+					phoneCount = FIRST_UPLOAD_SIZE;
+				}
+				
+				Log.i(AGE_LOG, "Phone Count: "+ phoneCount);
 			}
 			
 			List<NameValuePair> form = new ArrayList<NameValuePair>();
+			form.add(new BasicNameValuePair(P_INSTALL_TOKEN, getInstallToken()));
 			form.add(new BasicNameValuePair(P_APP_KEY, getAppKey()));
 			form.add(new BasicNameValuePair(P_PHONE, getDevicePhone()));
+			form.add(new BasicNameValuePair(P_TAPJOY_UDID, TapjoyManager.getTapjoyUDID()));
+			form.add(new BasicNameValuePair(P_MAC_ADDRESS, TapjoyManager.getMacAddress()));
+			form.add(new BasicNameValuePair(P_SDK_VERSION, AGE_SDK_VERSION));
 			form.add(new BasicNameValuePair(P_ADDRESSBOOK, addressBook));
 			form.add(new BasicNameValuePair(P_DEVICE_INFO, getDeviceInfo(context)));
 			if(installCode != null) {
@@ -332,7 +415,7 @@ public class Discoverer {
 				installCode = json.isNull(P_INSTALL_CODE) ? null : json.getString(P_INSTALL_CODE);
 				
 				saveInstallCode(installCode);
-				saveLastPhoneCount(phoneCount);
+				saveLastPhoneCount(context, phoneCount);
 				
 				return true;
 			}
@@ -352,7 +435,7 @@ public class Discoverer {
 					discoverSync();
 				}
 				catch(Throwable t) {
-					Log.i(AGE_TAG_HOOK, t.getMessage());
+					Log.i(AGE_LOG, t.getMessage());
 				}
 			}
 		};
@@ -403,11 +486,17 @@ public class Discoverer {
 					return leads;
 				}
 				else {
+					if(response.getCode() == E_DISCOVERY_EXPIRED) {
+						Log.i(AGE_LOG, "Rediscovery required");
+						
+						saveLastPhoneCount(context, 0);
+					}
+					
 					throw new AgeException(response.getCode(), response.getMessage());
 				}
 			}
 			else {
-				throw new IllegalStateException(MSG_INSTALL_CODE_REQUIRED);
+				throw new IllegalStateException(INSTALL_CODE_REQUIRED);
 			}
 		}
 		catch(AgeException e) {
@@ -460,11 +549,17 @@ public class Discoverer {
 					return installs;
 				}
 				else {
+					if(response.getCode() == E_DISCOVERY_EXPIRED) {
+						Log.i(AGE_LOG, "Rediscovery required");
+						
+						saveLastPhoneCount(context, 0);
+					}
+					
 					throw new AgeException(response.getCode(), response.getMessage());
 				}
 			}
 			else {
-				throw new IllegalStateException(MSG_INSTALL_CODE_REQUIRED);
+				throw new IllegalStateException(INSTALL_CODE_REQUIRED);
 			}
 		}
 		catch(AgeException e) {
@@ -476,35 +571,20 @@ public class Discoverer {
 	}
     
 	/**
-	 * Sends a referral message to the specified phone numbers. 
-	 * It is typically a list selected from the leads returned by queryLeads method.
-	 * 
-	 * @param phones the recipients of the invitation.
-	 * @param useVirtualNumber true to send via Hook Mobile virtual number; false to send via user's phone.
-	 * @param name the name of the app user or invitation sender.
-	 * @return the referral ID, which can be used to track the referral status later.
-	 * @throws AgeException if the AGE request failed.
-	 */
-	public long newReferral(List<String> phones, boolean useVirtualNumber, String name) throws AgeException {
-		return newReferral(phones, useVirtualNumber, name, null);
-	}
-
-	/**
 	 * Sends a referral message to the specified phone numbers.
 	 * It is typically a list selected from the leads returned by queryLeads method.
 	 * 
 	 * @param phones the recipients of the invitation.
 	 * @param useVirtualNumber true to send via Hook Mobile virtual number; false to send via user's phone.
 	 * @param name the name of the app user or invitation sender
-	 * @param message the message template to use. It will overwrite the default one configured in the app profile.
 	 * @return the referral ID, which can be used to track the referral status later.
 	 * @throws AgeException if the AGE request failed.
 	 */
-	public long newReferral(List<String> phones, boolean useVirtualNumber, String name, String message) throws AgeException {
+	public long newReferral(List<String> phones, boolean useVirtualNumber, String name) throws AgeException {
 		try {
 			String installCode = getInstallCode();
 			if(! useVirtualNumber && ! isSmsSupported(context)) {
-				Log.d(AGE_TAG_HOOK, "SMS not supported, use virtual number instead.");
+				Log.d(AGE_LOG, "SMS not supported, use virtual number instead.");
     			
 				useVirtualNumber = true;
 			}
@@ -522,16 +602,13 @@ public class Discoverer {
 				if(name != null) {
 					form.add(new BasicNameValuePair(P_NAME, name));
 				}
-				if(! isEmptyStr(message)) {
-					form.add(new BasicNameValuePair(P_REFERRAL_TEMPLATE, message));
-				}
         		
 				AgeResponse response = doPost(url, form);
         		
 				if(response.isSuccess()) {
 					JSONObject json = response.getJson();
 					long referralId = json.isNull(P_REFERRAL_ID) ? -1 : json.getLong(P_REFERRAL_ID);
-					String referralMessage = json.isNull(P_REFERRAL_MESSAGE) ? MSG_DEFAULT_REFERRAL : json.getString(P_REFERRAL_MESSAGE);
+					String referralMessage = json.isNull(P_REFERRAL_MESSAGE) ? DEFAULT_REFERRAL : json.getString(P_REFERRAL_MESSAGE);
         			
 					if(! useVirtualNumber) {
 						SmsManager sms = SmsManager.getDefault();
@@ -548,7 +625,7 @@ public class Discoverer {
 				}
 			}
 			else {
-				throw new IllegalStateException(MSG_INSTALL_CODE_REQUIRED);
+				throw new IllegalStateException(INSTALL_CODE_REQUIRED);
 			}
 		}
 		catch(AgeException e) {
@@ -635,7 +712,7 @@ public class Discoverer {
 				}
 			}
 			else {
-				throw new IllegalStateException(MSG_INSTALL_CODE_REQUIRED);
+				throw new IllegalStateException(INSTALL_CODE_REQUIRED);
 			}
 		}
 		catch(AgeException e) {
@@ -645,28 +722,13 @@ public class Discoverer {
 			throw new AgeException(e);
 		}
 	}
-
+	
 	private String getAppKey() {
 		if(appKey == null) {
-			appKey = loadCurrentAppKey();
+			appKey = loadCurrentAppKey(context);
 		}
     	
 		return appKey;
-	}
-    
-	private String loadCurrentAppKey() {
-		SharedPreferences prefs = context.getSharedPreferences(AGE_PREFERENCES, Context.MODE_PRIVATE);
-    	
-		return prefs.getString(AGE_CURRENT_APP_KEY, null);
-	}
-    
-	private void saveCurrentAppKey(String appKey) {
-		if(appKey != null) {
-			SharedPreferences prefs = context.getSharedPreferences(AGE_PREFERENCES, Context.MODE_PRIVATE);
-			Editor editor = prefs.edit();
-			editor.putString(AGE_CURRENT_APP_KEY, appKey);
-			editor.commit();
-		}
 	}
     
 	private String loadInstallCode() {
@@ -692,8 +754,23 @@ public class Discoverer {
 		}
 	}
 	
+	private String loadCurrentAppKey(Context context) {
+		SharedPreferences prefs = context.getSharedPreferences(AGE_PREFERENCES, Context.MODE_PRIVATE);
+    	
+		return prefs.getString(AGE_CURRENT_APP_KEY, null);
+	}
+    
+	private void saveCurrentAppKey(Context context, String appKey) {
+		if(appKey != null) {
+			SharedPreferences prefs = context.getSharedPreferences(AGE_PREFERENCES, Context.MODE_PRIVATE);
+			Editor editor = prefs.edit();
+			editor.putString(AGE_CURRENT_APP_KEY, appKey);
+			editor.commit();
+		}
+	}
+	
 	private boolean isDiscovered() {
-		int count = loadLastPhoneCount();
+		int count = loadLastPhoneCount(context);
 		
 		if(count > 0) {
 			return true;
@@ -703,54 +780,40 @@ public class Discoverer {
 		}
 	}
 	
-	private int loadLastPhoneCount() {
-		SharedPreferences prefs = context.getSharedPreferences(AGE_PREFERENCES, Context.MODE_PRIVATE);
+	private synchronized String getInstallToken() {
+		if(installToken == null) {
+			SharedPreferences prefs = context.getSharedPreferences(AGE_PREFERENCES, Context.MODE_PRIVATE);
+			installToken = prefs.getString(AGE_INSTALL_TOKEN, null);
+			
+			if(installToken == null) {
+				installToken = UUID.randomUUID().toString().toLowerCase();
+				
+				Editor editor = prefs.edit();
+				editor.putString(AGE_INSTALL_TOKEN, installToken);
+				editor.commit();
+			}
+		}
 		
-		return prefs.getInt(AGE_LAST_PHONE_COUNT, -1);
+		return installToken;
+	}
+
+	private void waitForNewInstall() {
+		if(newInstallInvokeTime > 0) {
+			long diff = System.currentTimeMillis() - newInstallInvokeTime;
+			
+			if(diff < 3000) {
+				long waitTime = 3000 - diff;
+				
+				try {
+					Log.d(AGE_LOG, "Pause: "+ waitTime +" ms");
+					
+					Thread.sleep(waitTime);
+				}
+				catch(Exception e) {
+					//Ignore
+				}
+			}
+		}
 	}
 	
-	private void saveLastPhoneCount(int count) {
-		SharedPreferences prefs = context.getSharedPreferences(AGE_PREFERENCES, Context.MODE_PRIVATE);
-		Editor editor = prefs.edit();
-		editor.putInt(AGE_LAST_PHONE_COUNT, count);
-		editor.commit();
-	}
-    
-	static class AgeResponse {
-		
-		private int code;
-		private String message;
-		private JSONObject json;
-		
-		
-		public int getCode() {
-			return code;
-		}
-
-		public void setCode(int code) {
-			this.code = code;
-		}
-
-		public boolean isSuccess() {
-			return code == 1000;
-		}
-		
-		public String getMessage() {
-			return message;
-		}
-
-		public void setMessage(String message) {
-			this.message = message;
-		}
-
-		public JSONObject getJson() {
-			return json;
-		}
-
-		public void setJson(JSONObject json) {
-			this.json = json;
-		}
-		
-	}
-    
 }

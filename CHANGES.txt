@@ -1,3 +1,7 @@
+1.0.2
+ * Support Tapjoy UDID.
+ * Optimize address book scanning.
+ 
 1.0.1
  * Prevent redundant upload if address book not changed.
  * Optimize address book upload.
