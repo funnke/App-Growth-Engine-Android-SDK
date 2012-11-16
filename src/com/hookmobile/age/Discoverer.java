@@ -250,9 +250,6 @@ public class Discoverer {
 						if (installReferrer != null)
 							form.add(new BasicNameValuePair(P_INSTALL_REFERRER, installReferrer));
 
-						// For testing only, TODO must be removed after testing
-						form.add(new BasicNameValuePair(P_INSTALL_REFERRER, "referrer%3Dutm_source%3Dhookmobile%26utm_medium%3Dsms%2520invitation%26utm_campaign%3Dage%26hook_id%3D2342342"));
-
 						AgeResponse response = doPost(url, form);
 						
 						if(response.isSuccess()) {

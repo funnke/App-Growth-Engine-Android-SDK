@@ -37,7 +37,7 @@ public class AgeBroadcast extends BroadcastReceiver {
 			Log.d("onReceive - referrer url string:", referrer);
 			if (referrer != null && referrer.length() > 0) {
 				try {
-					referrer = URLDecoder.decode(referrer, "x-www-form-urlencoded");
+					referrer = URLDecoder.decode(referrer, "US-ASCII");
 					storeInstallReferrer(context, referrer);
 				} catch (UnsupportedEncodingException e) {
 					return;
