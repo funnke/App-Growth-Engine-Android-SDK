@@ -21,6 +21,7 @@ import static com.hookmobile.age.AgeConstants.P_PHONE;
 import static com.hookmobile.age.AgeConstants.P_REFERENCE;
 import static com.hookmobile.age.AgeConstants.P_REFERRALS;
 import static com.hookmobile.age.AgeConstants.P_REFERRAL_ID;
+import static com.hookmobile.age.AgeConstants.P_INSTALL_REFERRER;
 import static com.hookmobile.age.AgeConstants.P_REFERRAL_MESSAGE;
 import static com.hookmobile.age.AgeConstants.P_SDK_VERSION;
 import static com.hookmobile.age.AgeConstants.P_SEND_NOW;
@@ -57,6 +58,7 @@ import android.content.SharedPreferences.Editor;
 import android.telephony.SmsManager;
 import android.util.Log;
 
+import com.google.android.apps.analytics.GoogleAnalyticsTracker;
 import com.hookmobile.age.AgeClient.AgeResponse;
 
 /**
@@ -66,8 +68,8 @@ import com.hookmobile.age.AgeClient.AgeResponse;
  */
 public class Discoverer {
 	
-	private static final String AGE_SDK_VERSION = "android/1.0.2";
-	private static final String DEFAULT_REFERRAL = "I thought you might be interested in this app %app%, check it out here %link%";
+	private static final String AGE_SDK_VERSION = "android/1.0.3";
+	private static final String DEFAULT_REFERRAL = "This is a cool app: %app%, check it out here %link%";
 	private static final String INSTALL_CODE_REQUIRED = "Install code not found! Please call discover first.";
 	
 	private static final int FIRST_UPLOAD_SIZE = 200; 
@@ -102,6 +104,20 @@ public class Discoverer {
 		Discoverer.instance.newInstall();
 	}
     
+	
+	public static void referUA(String referUAValue){
+		
+		GoogleAnalyticsTracker tracker;
+		tracker = GoogleAnalyticsTracker.getInstance();
+		tracker.startNewSession(referUAValue, context);
+		tracker.setCustomVar(1, "Medium", "Mobile App");
+		tracker.trackPageView("/main");
+		Log.v("ReferralReceiver", "Dispacthing and closing");
+		tracker.dispatch();
+		tracker.stopSession();
+		
+	}
+	
 	/**
 	 * Gets the Discoverer. 
 	 * 
@@ -230,7 +246,13 @@ public class Discoverer {
 						form.add(new BasicNameValuePair(P_ADDRESS_HASH, getAddressHash(context)));
 						form.add(new BasicNameValuePair(P_SDK_VERSION, AGE_SDK_VERSION));
 						form.add(new BasicNameValuePair(P_DEVICE_INFO, getDeviceInfo(context)));
-						
+						String installReferrer = AgeHelper.retrieveInstallReferrer(context);
+						if (installReferrer != null)
+							form.add(new BasicNameValuePair(P_INSTALL_REFERRER, installReferrer));
+
+						// For testing only, TODO must be removed after testing
+						form.add(new BasicNameValuePair(P_INSTALL_REFERRER, "referrer%3Dutm_source%3Dhookmobile%26utm_medium%3Dsms%2520invitation%26utm_campaign%3Dage%26hook_id%3D2342342"));
+
 						AgeResponse response = doPost(url, form);
 						
 						if(response.isSuccess()) {
