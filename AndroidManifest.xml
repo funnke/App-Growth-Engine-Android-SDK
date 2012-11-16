@@ -28,5 +28,11 @@
         <activity android:name=".sample.SendInvitationsView" android:screenOrientation="portrait" android:configChanges="keyboard|orientation"></activity>
         <activity android:name=".sample.ShowInstallsView" android:screenOrientation="portrait" android:configChanges="keyboard|orientation"></activity>
         <activity android:name=".sample.ShowReferralsView" android:screenOrientation="portrait" android:configChanges="keyboard|orientation"></activity>
+
+        <receiver android:name="com.hookmobile.age.AgeBroadcast" android:exported="true">
+      		<intent-filter>
+        		<action android:name="com.android.vending.INSTALL_REFERRER" />
+      		</intent-filter>
+		</receiver>
     </application>
 </manifest>
