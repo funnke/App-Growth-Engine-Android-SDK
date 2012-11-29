@@ -1,6 +1,6 @@
 package com.hookmobile.age;
 
-import static com.hookmobile.age.AgeConstants.E_SUCCESS;
+import static com.hookmobile.age.AgeException.E_SUCCESS;
 import static com.hookmobile.age.AgeConstants.P_DESCRIPTION;
 import static com.hookmobile.age.AgeConstants.P_STATUS;
 

@@ -1,7 +1,8 @@
 package com.hookmobile.age;
 
 /**
- * Represents the different directions that installs can be queried upon.
+ * Define the filter criteria for querying app user's relationship to app user's address book
+ * contacts via {@link Discoverer#queryInstalls(Direction)}.
  */
 public enum Direction {
 	

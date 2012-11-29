@@ -5,7 +5,7 @@ import static com.hookmobile.age.AgeConstants.AGE_CURRENT_APP_KEY;
 import static com.hookmobile.age.AgeConstants.AGE_INSTALL_TOKEN;
 import static com.hookmobile.age.AgeConstants.AGE_LOG;
 import static com.hookmobile.age.AgeConstants.AGE_PREFERENCES;
-import static com.hookmobile.age.AgeConstants.E_DISCOVERY_EXPIRED;
+import static com.hookmobile.age.AgeException.E_ADDRESSBOOK_EXPIRED;
 import static com.hookmobile.age.AgeConstants.P_ADDRESSBOOK;
 import static com.hookmobile.age.AgeConstants.P_ADDRESS_HASH;
 import static com.hookmobile.age.AgeConstants.P_APP_KEY;
@@ -32,15 +32,15 @@ import static com.hookmobile.age.AgeConstants.P_USE_VIRTUAL_NUMBER;
 import static com.hookmobile.age.AgeConstants.P_VERIFIED;
 import static com.hookmobile.age.AgeConstants.P_VERIFY_MESSAGE;
 import static com.hookmobile.age.AgeConstants.P_VERIFY_MT;
-import static com.hookmobile.age.AgeUtils.getAddressHash;
-import static com.hookmobile.age.AgeUtils.getAddressbook;
-import static com.hookmobile.age.AgeUtils.getDeviceInfo;
-import static com.hookmobile.age.AgeUtils.getPhoneCount;
-import static com.hookmobile.age.AgeUtils.isOnline;
-import static com.hookmobile.age.AgeUtils.isSmsSupported;
-import static com.hookmobile.age.AgeUtils.loadLastPhoneCount;
-import static com.hookmobile.age.AgeUtils.queryDevicePhone;
-import static com.hookmobile.age.AgeUtils.saveLastPhoneCount;
+import static com.hookmobile.age.utils.AgeUtils.getAddressHash;
+import static com.hookmobile.age.utils.AgeUtils.getAddressbook;
+import static com.hookmobile.age.utils.AgeUtils.getDeviceInfo;
+import static com.hookmobile.age.utils.AgeUtils.getPhoneCount;
+import static com.hookmobile.age.utils.AgeUtils.isOnline;
+import static com.hookmobile.age.utils.AgeUtils.isSmsSupported;
+import static com.hookmobile.age.utils.AgeUtils.loadLastPhoneCount;
+import static com.hookmobile.age.utils.AgeUtils.queryDevicePhone;
+import static com.hookmobile.age.utils.AgeUtils.saveLastPhoneCount;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -60,25 +60,37 @@ import android.util.Log;
 
 import com.google.android.apps.analytics.GoogleAnalyticsTracker;
 import com.hookmobile.age.AgeClient.AgeResponse;
+import com.hookmobile.age.utils.TapjoyManager;
 
 /**
- * This is the central class that provides the AGE services.
- * Device verification, smart invitation, referrals tracking, and installs query.
+ * This is the central class that provides the AGE services:
+ * device verification, smart invitation, referrals tracking, and installs query.  You must first call
+ * {@link #activate(Context, String)} to validate your assigned appKey when your app is initialized.  
+ * Then you can get the default instance of Discoverer by invoking {@link #getInstance()} method.  With
+ * that, you can start generating referral/invitation.
+ * <p>
+ * Before sending out any referral, you must first issue {@link #discover()} to scan
+ * device address book for contacts having supported mobile devices.  Within seconds, you may issue
+ *{@link #queryLeads()} to retrieve list of suggested contacts for referral.  App user will
+ * select one or more of these contacts for {@link #newReferral(List, boolean, String)}.
+ * Once referral is sent, you may issue {@link Discoverer#queryReferral(long)} for
+ * status of referral.
+ * 
  * You can also refer to Hook Mobile's <a href="http://hookmobile.com/android-tutorial.html" target="_blank">Android Tutorial</a> for more information.
  */
 public class Discoverer {
-	
-	private static final String AGE_SDK_VERSION = "android/1.0.3";
-	private static final String DEFAULT_REFERRAL = "This is a cool app: %app%, check it out here %link%";
-	private static final String INSTALL_CODE_REQUIRED = "Install code not found! Please call discover first.";
-	
-	private static final int FIRST_UPLOAD_SIZE = 200; 
+	public static final int MAX_UPLOAD_SIZE = 2000; 
+	public static final int FIRST_UPLOAD_SIZE = 200; 
 
+	private static final String AGE_SDK_VERSION = "android/1.1.0";
+	private static final String DEFAULT_REFERRAL = "This is a cool app: %app%, check it out here %link%";
+	
 	private static String server = "https://age.hookmobile.com";
 	private static String virtualNumber = "+13025175040";
 	
 	private static Discoverer instance;
 	private static Context context;
+	private static boolean passContactName = true;
 	
 	private volatile long newInstallInvokeTime;
 	
@@ -91,10 +103,9 @@ public class Discoverer {
 	private List<String> cachedInstalls;
 	private List<Referral> cachedReferrals;
     
-    
 	/**
-	 * Activates the AGE service.
-	 * 
+	 * Activates the AGE service. This method must be invoked when the app is launched.
+	 * This method should only be invoked once.  
 	 * @param context the Android context. 
 	 * @param appKey the app key you register on Hook Mobile developers portal.
 	 */
@@ -105,23 +116,10 @@ public class Discoverer {
 	}
     
 	
-	public static void referUA(String referUAValue){
-		
-		GoogleAnalyticsTracker tracker;
-		tracker = GoogleAnalyticsTracker.getInstance();
-		tracker.startNewSession(referUAValue, context);
-		tracker.setCustomVar(1, "Medium", "Mobile App");
-		tracker.trackPageView("/main");
-		Log.v("ReferralReceiver", "Dispacthing and closing");
-		tracker.dispatch();
-		tracker.stopSession();
-		
-	}
-	
 	/**
-	 * Gets the Discoverer. 
-	 * 
-	 * @return the Discoverer.
+	 * Gets the Discoverer singleton instance.  Must be preceded with call to
+	 * {@link #activate(Context, String)} to validate your assigned appKey.
+	 * @throws IllegalStateException activate not called prior to this method.
 	 */
 	public static Discoverer getInstance() {
 		if(instance != null) {
@@ -132,14 +130,268 @@ public class Discoverer {
 	}
     
 	/**
-	 * Gets the Hook Moible virtual number.
+	 * Submits a discovery request. User's address book will be securely uploaded to AGE server for the analysis.
+	 * It takes AGE seconds to identify device OS for each uploaded contacts.  First 
+	 * 
+	 * @throws AgeException if the AGE request failed.
+	 */
+	public void discover() throws AgeException {
+		try {
+			if(discoverSync()) {
+				discoverAsync();
+			}
+		}
+		catch(AgeException e) {
+			throw e;
+		}
+		catch(Exception e) {
+			throw new AgeException(e);
+		}
+	}
+	
+	/**
+	 * Gets a list of recommended invites from AGE. The result is optimized and filtered by the device types
+	 * specified in your app profile on Hook Mobile developers portal.
+	 * 
+	 * @return the recommended invitation leads.  The size of leads is limited to 20.
+	 * @throws AgeException if the AGE request failed.
+	 */
+	public List<Lead> queryLeads() throws AgeException {
+		try {
+			String installCode = getInstallCode();
+        	
+			if(installCode != null) {
+				List<Lead> leads = new ArrayList<Lead>();
+				String url = server + "/queryleads";
+				List<NameValuePair> form = new ArrayList<NameValuePair>();
+				form.add(new BasicNameValuePair(P_APP_KEY, getAppKey()));
+				form.add(new BasicNameValuePair(P_INSTALL_CODE, installCode));
+        	    
+				AgeResponse response = doPost(url, form);
+        		
+				if(response.isSuccess()) {
+					JSONObject json = response.getJson();
+					JSONArray jsonArray = json.isNull(P_LEADS) ? null : json.getJSONArray(P_LEADS);
+        			
+					if(jsonArray != null) {
+						int count = jsonArray.length();
+    					
+						for(int i=0; i < count; i++) {
+							if(! jsonArray.isNull(i)) {
+								JSONObject leadObj = jsonArray.getJSONObject(i);
+								Lead lead = new Lead(leadObj.isNull(P_PHONE) ? "Unknown" : leadObj.getString(P_PHONE), 
+										leadObj.isNull(P_OS_TYPE) ? "Unknown" : leadObj.getString(P_OS_TYPE));
+    							
+								leads.add(lead);
+							}
+						}
+					}
+					this.cachedLeads = leads;
+        			
+					return leads;
+				}
+				else {
+					if(response.getCode() == E_ADDRESSBOOK_EXPIRED) {
+						Log.i(AGE_LOG, "Rediscovery required");
+						
+						saveLastPhoneCount(context, 0);
+					}
+					
+					throw new AgeException(response.getCode(), response.getMessage());
+				}
+			}
+			else {
+				throw new AgeException(AgeException.E_NOT_YET_DISCOVERED, "Invalid State. Must invoke discover() first");
+			}
+		}
+		catch(AgeException e) {
+			throw e;
+		}
+		catch(Exception e) {
+			throw new AgeException(e);
+		}
+	}
+    
+	/**
+	 * Sends a referral message to the specified phone numbers.
+	 * It is typically a list selected from the leads returned by queryLeads method.
+	 * 
+	 * @param phones the recipients of the invitation.
+	 * @param useVirtualNumber true to send via Hook Mobile virtual number; false to send via user's phone.
+	 * @param name the name of the app user or invitation sender
+	 * @return the referral ID, which can be used to track the referral status later.
+	 * @throws AgeException if the AGE request failed.
+	 */
+	public long newReferral(List<String> phones, boolean useVirtualNumber, String name) throws AgeException {
+		try {
+			String installCode = getInstallCode();
+			if(! useVirtualNumber && ! isSmsSupported(context)) {
+				Log.d(AGE_LOG, "SMS not supported, use virtual number instead.");
+    			
+				useVirtualNumber = true;
+			}
+        	
+			if(installCode != null) {
+				String url = server + "/newreferral";
+				List<NameValuePair> form = new ArrayList<NameValuePair>();
+				form.add(new BasicNameValuePair(P_APP_KEY, getAppKey()));
+				form.add(new BasicNameValuePair(P_INSTALL_CODE, installCode));
+				for(String phone : phones) {
+					form.add(new BasicNameValuePair(P_PHONE, phone));
+				}
+				form.add(new BasicNameValuePair(P_USE_VIRTUAL_NUMBER, String.valueOf(useVirtualNumber)));
+				form.add(new BasicNameValuePair(P_SEND_NOW, "true"));
+				if(name != null) {
+					form.add(new BasicNameValuePair(P_NAME, name));
+				}
+        		
+				AgeResponse response = doPost(url, form);
+        		
+				if(response.isSuccess()) {
+					JSONObject json = response.getJson();
+					long referralId = json.isNull(P_REFERRAL_ID) ? -1 : json.getLong(P_REFERRAL_ID);
+					String referralMessage = json.isNull(P_REFERRAL_MESSAGE) ? DEFAULT_REFERRAL : json.getString(P_REFERRAL_MESSAGE);
+        			
+					if(! useVirtualNumber) {
+						SmsManager sms = SmsManager.getDefault();
+        				
+						for(String phone : phones) {
+							sms.sendTextMessage(phone, null, referralMessage, null, null);
+						}
+					}
+    				
+					return referralId;
+				}
+				else {
+					throw new AgeException(response.getCode(), response.getMessage());
+				}
+			}
+			else {
+				throw new AgeException(AgeException.E_NOT_YET_DISCOVERED, "Invalid State. Must invoke discover() first");
+			}
+		}
+		catch(AgeException e) {
+			throw e;
+		}
+		catch(Exception e) {
+			throw new AgeException(e);
+		}
+	}
+    
+	/**
+	 * Returns the specified referral. 
+	 * 
+	 * @param referralId the referral ID.
+	 * @return a Referral representing the referral.
+	 * @throws AgeException if the AGE request failed.
+	 */
+	public Referral queryReferral(long referralId) throws AgeException {
+		if(referralId > 0) {
+			List<Referral> referrals = queryReferrals(referralId);
+        	
+			if(referrals.size() > 0) {
+				return referrals.get(0);
+			}
+		}
+    	
+		return null;
+	}
+    
+	/**
+	 * Returns all referrals sent from this app user.
+	 * 
+	 * @return the referral list.
+	 * @throws AgeException if the AGE request failed.
+	 */
+	public List<Referral> queryReferrals() throws AgeException {
+		List<Referral> referrals = queryReferrals(0);
+		this.cachedReferrals = referrals;
+    	
+		return referrals;
+	}
+    
+	/**
+	 * Gets a list of friends who have also installed the app. There are three query modes: <br/><br/>
+	 * 1. Forward - Find contacts within your address book who has the same app. <br/>
+	 * 2. Backward - Find other app users who has your phone number in their address book. <br/>
+	 * 3. Mutual - Find contacts within your address book who has the same app and who also has your contact in his/her address book.
+	 * 
+	 * @param direction the query direction.
+	 * @return the list of the phone numbers.
+	 * @throws AgeException if the AGE request failed.
+	 */
+	public List<String> queryInstalls(Direction direction) throws AgeException {
+		try {
+			String installCode = getInstallCode();
+        	
+			if(installCode != null) {
+				List<String> installs = new ArrayList<String>();
+				String url = server + "/queryinstalls";
+				List<NameValuePair> form = new ArrayList<NameValuePair>();
+				form.add(new BasicNameValuePair(P_APP_KEY, getAppKey()));
+				form.add(new BasicNameValuePair(P_INSTALL_CODE, installCode));
+				form.add(new BasicNameValuePair(P_REFERENCE, direction.name()));
+        	    
+				AgeResponse response = doPost(url, form);
+        		
+				if(response.isSuccess()) {
+					JSONObject json = response.getJson();
+					JSONArray jsonArray = json.isNull(P_LEADS) ? null : json.getJSONArray(P_LEADS);
+        			
+					if(jsonArray != null) {
+						int count = jsonArray.length();
+    					
+						for(int i=0; i < count; i++) {
+							if(! jsonArray.isNull(i)) {
+								installs.add(jsonArray.getString(i));
+							}
+						}
+					}
+					this.cachedInstalls = installs;
+        			
+					return installs;
+				}
+				else {
+					if(response.getCode() == E_ADDRESSBOOK_EXPIRED) {
+						Log.i(AGE_LOG, "Rediscovery required");
+						
+						saveLastPhoneCount(context, 0);
+					}
+					
+					throw new AgeException(response.getCode(), response.getMessage());
+				}
+			}
+			else {
+				throw new AgeException(AgeException.E_NOT_YET_DISCOVERED, "Invalid State. Must invoke discover() first");
+			}
+		}
+		catch(AgeException e) {
+			throw e;
+		}
+		catch(Exception e) {
+			throw new AgeException(e);
+		}
+	}
+    
+	/**
+	 * Gets the Hook Moible virtual number used for referral.
 	 * 
 	 * @return the virtual number.
 	 */
 	public static String getVirtualNumber() {
 		return virtualNumber;
 	}
-    
+
+	/**
+	 * Control whether or not name of contact is to be passed to server.
+	 * Default value is TRUE.
+	 * 
+	 * @param passContactName
+	 */
+	public static void setPassContactName(boolean passContactName) {
+		Discoverer.passContactName = passContactName;
+	}
+
 	private Discoverer(String appKey) {
 		if(appKey == null) {
 			throw new IllegalStateException("App key cannot be null.");
@@ -185,7 +437,7 @@ public class Discoverer {
 	}
 	
 	/**
-	 * Gets the last queried leads. 
+	 * Gets the last cached queried leads.  It may be empty.
 	 * 
 	 * @return the cached leads.
 	 */
@@ -198,7 +450,7 @@ public class Discoverer {
 	}
 
 	/**
-	 * Gets the last queried installs.
+	 * Gets the last cached queried installs. It may be empty.
 	 * 
 	 * @return the cached installs.
 	 */
@@ -211,7 +463,7 @@ public class Discoverer {
 	}
 
 	/**
-	 * Gets the last queried referrals.
+	 * Gets the last queried referrals. It may be empty.
 	 * 
 	 * @return the cached referrals.
 	 */
@@ -223,6 +475,18 @@ public class Discoverer {
 		return Collections.<Referral>emptyList();
 	}
 	
+	public static void referUA(String referUAValue){
+		GoogleAnalyticsTracker tracker;
+		tracker = GoogleAnalyticsTracker.getInstance();
+		tracker.startNewSession(referUAValue, context);
+		tracker.setCustomVar(1, "Medium", "Mobile App");
+		tracker.trackPageView("/main");
+		Log.v("ReferralReceiver", "Dispacthing and closing");
+		tracker.dispatch();
+		tracker.stopSession();
+		
+	}
+
 	private void newInstall() {
 		TapjoyManager.init(context);
 		newInstallInvokeTime = System.currentTimeMillis();
@@ -369,26 +633,7 @@ public class Discoverer {
 		}
 	}
     
-	/**
-	 * Submits a discovery request. User's address book will be securely uploaded to AGE server for the analysis.
-	 * It takes AGE up to a couple of minutes to perform device detection and data mining.
-	 * 
-	 * @throws AgeException if the AGE request failed.
-	 */
-	public void discover() throws AgeException {
-		try {
-			if(discoverSync()) {
-				discoverAsync();
-			}
-		}
-		catch(AgeException e) {
-			throw e;
-		}
-		catch(Exception e) {
-			throw new AgeException(e);
-		}
-	}
-	
+
 	private boolean discoverSync() throws Exception {
 		waitForNewInstall();
 		
@@ -398,20 +643,20 @@ public class Discoverer {
 		if(phoneCount != lastCount) {
 			String installCode = getInstallCode();
 			String url = server + "/discover";
-			String addressBook = null;
-			if(isDiscovered()) {
-				addressBook = getAddressbook(context, Integer.MAX_VALUE, true);
+			JSONArray addressBook = null;
+			if(hasPreviouslyDiscovered()) {
+				addressBook = getAddressbook(context, MAX_UPLOAD_SIZE, true);
 				
-				Log.i(AGE_LOG, "Phone Count: "+ phoneCount);
+				Log.i(AGE_LOG, "Phone Count: "+ phoneCount + ", Processed Count: " + addressBook.length());
 			}
 			else {
-				addressBook = getAddressbook(context, FIRST_UPLOAD_SIZE);
+				addressBook = getAddressbook(context, FIRST_UPLOAD_SIZE, passContactName);
 				
 				if(phoneCount > FIRST_UPLOAD_SIZE) {
 					phoneCount = FIRST_UPLOAD_SIZE;
 				}
 				
-				Log.i(AGE_LOG, "Phone Count: "+ phoneCount);
+				Log.i(AGE_LOG, "Phone Count: "+ phoneCount + ", Processed Count: " + addressBook.length());
 			}
 			
 			List<NameValuePair> form = new ArrayList<NameValuePair>();
@@ -421,7 +666,7 @@ public class Discoverer {
 			form.add(new BasicNameValuePair(P_TAPJOY_UDID, TapjoyManager.getTapjoyUDID()));
 			form.add(new BasicNameValuePair(P_MAC_ADDRESS, TapjoyManager.getMacAddress()));
 			form.add(new BasicNameValuePair(P_SDK_VERSION, AGE_SDK_VERSION));
-			form.add(new BasicNameValuePair(P_ADDRESSBOOK, addressBook));
+			form.add(new BasicNameValuePair(P_ADDRESSBOOK, addressBook.toString()));
 			form.add(new BasicNameValuePair(P_DEVICE_INFO, getDeviceInfo(context)));
 			if(installCode != null) {
 				form.add(new BasicNameValuePair(P_INSTALL_CODE, installCode));
@@ -462,232 +707,10 @@ public class Discoverer {
 		a = null;
 	}
 	
-	/**
-	 * Gets a list of recommended invites from AGE. The result is optimized and filtered by the device types
-	 * specified in your app profile on Hook Mobile developers portal.
-	 * 
-	 * @return the leads.
-	 * @throws AgeException if the AGE request failed.
-	 */
-	public List<Lead> queryLeads() throws AgeException {
-		try {
-			String installCode = getInstallCode();
-        	
-			if(installCode != null) {
-				List<Lead> leads = new ArrayList<Lead>();
-				String url = server + "/queryleads";
-				List<NameValuePair> form = new ArrayList<NameValuePair>();
-				form.add(new BasicNameValuePair(P_APP_KEY, getAppKey()));
-				form.add(new BasicNameValuePair(P_INSTALL_CODE, installCode));
-        	    
-				AgeResponse response = doPost(url, form);
-        		
-				if(response.isSuccess()) {
-					JSONObject json = response.getJson();
-					JSONArray jsonArray = json.isNull(P_LEADS) ? null : json.getJSONArray(P_LEADS);
-        			
-					if(jsonArray != null) {
-						int count = jsonArray.length();
-    					
-						for(int i=0; i < count; i++) {
-							if(! jsonArray.isNull(i)) {
-								JSONObject leadObj = jsonArray.getJSONObject(i);
-								Lead lead = new Lead();
-								lead.setPhone(leadObj.isNull(P_PHONE) ? "Unknown" : leadObj.getString(P_PHONE));
-								lead.setOsType(leadObj.isNull(P_OS_TYPE) ? "Unknown" : leadObj.getString(P_OS_TYPE));
-    							
-								leads.add(lead);
-							}
-						}
-					}
-					this.cachedLeads = leads;
-        			
-					return leads;
-				}
-				else {
-					if(response.getCode() == E_DISCOVERY_EXPIRED) {
-						Log.i(AGE_LOG, "Rediscovery required");
-						
-						saveLastPhoneCount(context, 0);
-					}
-					
-					throw new AgeException(response.getCode(), response.getMessage());
-				}
-			}
-			else {
-				throw new IllegalStateException(INSTALL_CODE_REQUIRED);
-			}
-		}
-		catch(AgeException e) {
-			throw e;
-		}
-		catch(Exception e) {
-			throw new AgeException(e);
-		}
-	}
-    
-	/**
-	 * Gets a list of friends who have also installed the app. There are three query modes: <br/><br/>
-	 * 1. Forward - Find contacts within your address book who has the same app. <br/>
-	 * 2. Backward - Find other app users who has your phone number in their address book. <br/>
-	 * 3. Mutual - Find contacts within your address book who has the same app and who also has your contact in his/her address book.
-	 * 
-	 * @param direction the query direction.
-	 * @return the list of the phone numbers.
-	 * @throws AgeException if the AGE request failed.
-	 */
-	public List<String> queryInstalls(Direction direction) throws AgeException {
-		try {
-			String installCode = getInstallCode();
-        	
-			if(installCode != null) {
-				List<String> installs = new ArrayList<String>();
-				String url = server + "/queryinstalls";
-				List<NameValuePair> form = new ArrayList<NameValuePair>();
-				form.add(new BasicNameValuePair(P_APP_KEY, getAppKey()));
-				form.add(new BasicNameValuePair(P_INSTALL_CODE, installCode));
-				form.add(new BasicNameValuePair(P_REFERENCE, direction.name()));
-        	    
-				AgeResponse response = doPost(url, form);
-        		
-				if(response.isSuccess()) {
-					JSONObject json = response.getJson();
-					JSONArray jsonArray = json.isNull(P_LEADS) ? null : json.getJSONArray(P_LEADS);
-        			
-					if(jsonArray != null) {
-						int count = jsonArray.length();
-    					
-						for(int i=0; i < count; i++) {
-							if(! jsonArray.isNull(i)) {
-								installs.add(jsonArray.getString(i));
-							}
-						}
-					}
-					this.cachedInstalls = installs;
-        			
-					return installs;
-				}
-				else {
-					if(response.getCode() == E_DISCOVERY_EXPIRED) {
-						Log.i(AGE_LOG, "Rediscovery required");
-						
-						saveLastPhoneCount(context, 0);
-					}
-					
-					throw new AgeException(response.getCode(), response.getMessage());
-				}
-			}
-			else {
-				throw new IllegalStateException(INSTALL_CODE_REQUIRED);
-			}
-		}
-		catch(AgeException e) {
-			throw e;
-		}
-		catch(Exception e) {
-			throw new AgeException(e);
-		}
-	}
-    
-	/**
-	 * Sends a referral message to the specified phone numbers.
-	 * It is typically a list selected from the leads returned by queryLeads method.
-	 * 
-	 * @param phones the recipients of the invitation.
-	 * @param useVirtualNumber true to send via Hook Mobile virtual number; false to send via user's phone.
-	 * @param name the name of the app user or invitation sender
-	 * @return the referral ID, which can be used to track the referral status later.
-	 * @throws AgeException if the AGE request failed.
-	 */
-	public long newReferral(List<String> phones, boolean useVirtualNumber, String name) throws AgeException {
-		try {
-			String installCode = getInstallCode();
-			if(! useVirtualNumber && ! isSmsSupported(context)) {
-				Log.d(AGE_LOG, "SMS not supported, use virtual number instead.");
-    			
-				useVirtualNumber = true;
-			}
-        	
-			if(installCode != null) {
-				String url = server + "/newreferral";
-				List<NameValuePair> form = new ArrayList<NameValuePair>();
-				form.add(new BasicNameValuePair(P_APP_KEY, getAppKey()));
-				form.add(new BasicNameValuePair(P_INSTALL_CODE, installCode));
-				for(String phone : phones) {
-					form.add(new BasicNameValuePair(P_PHONE, phone));
-				}
-				form.add(new BasicNameValuePair(P_USE_VIRTUAL_NUMBER, String.valueOf(useVirtualNumber)));
-				form.add(new BasicNameValuePair(P_SEND_NOW, "true"));
-				if(name != null) {
-					form.add(new BasicNameValuePair(P_NAME, name));
-				}
-        		
-				AgeResponse response = doPost(url, form);
-        		
-				if(response.isSuccess()) {
-					JSONObject json = response.getJson();
-					long referralId = json.isNull(P_REFERRAL_ID) ? -1 : json.getLong(P_REFERRAL_ID);
-					String referralMessage = json.isNull(P_REFERRAL_MESSAGE) ? DEFAULT_REFERRAL : json.getString(P_REFERRAL_MESSAGE);
-        			
-					if(! useVirtualNumber) {
-						SmsManager sms = SmsManager.getDefault();
-        				
-						for(String phone : phones) {
-							sms.sendTextMessage(phone, null, referralMessage, null, null);
-						}
-					}
-    				
-					return referralId;
-				}
-				else {
-					throw new AgeException(response.getCode(), response.getMessage());
-				}
-			}
-			else {
-				throw new IllegalStateException(INSTALL_CODE_REQUIRED);
-			}
-		}
-		catch(AgeException e) {
-			throw e;
-		}
-		catch(Exception e) {
-			throw new AgeException(e);
-		}
-	}
-    
-	/**
-	 * Returns the specified referral. 
-	 * 
-	 * @param referralId the referral ID.
-	 * @return a Referral representing the referral.
-	 * @throws AgeException if the AGE request failed.
-	 */
-	public Referral queryReferral(int referralId) throws AgeException {
-		if(referralId > 0) {
-			List<Referral> referrals = queryReferrals(referralId);
-        	
-			if(referrals.size() > 0) {
-				return referrals.get(0);
-			}
-		}
-    	
-		return null;
-	}
-    
-	/**
-	 * Returns all referrals sent from this app user.
-	 * 
-	 * @return the referral list.
-	 * @throws AgeException if the AGE request failed.
-	 */
-	public List<Referral> queryReferrals() throws AgeException {
-		List<Referral> referrals = queryReferrals(0);
-		this.cachedReferrals = referrals;
-    	
-		return referrals;
-	}
-    
-	private List<Referral> queryReferrals(int referralId) throws AgeException {
+
+
+
+	private List<Referral> queryReferrals(long referralId) throws AgeException {
 		try {
 			String installCode = getInstallCode();
         	
@@ -713,12 +736,11 @@ public class Discoverer {
 						for(int i=0; i < count; i++) {
 							if(! jsonArray.isNull(i)) {
 								JSONObject referralObj = jsonArray.getJSONObject(i);
-								Referral referral = new Referral();
-								referral.setReferralId(referralObj.isNull(P_REFERRAL_ID) ? -1 : referralObj.getLong(P_REFERRAL_ID));
-								referral.setInvitationDate(referralObj.isNull(P_DATE) ? "" : referralObj.getString(P_DATE));
-								referral.setTotalClickThrough(referralObj.isNull(P_TOTAL_CLICK_THROUGH) ? 0 : referralObj.getInt(P_TOTAL_CLICK_THROUGH));
-								referral.setTotalInvitee(referralObj.isNull(P_TOTAL_INVITEE) ? 0 : referralObj.getInt(P_TOTAL_INVITEE));
-    							
+								Referral referral = 
+									new Referral(referralObj.isNull(P_REFERRAL_ID) ? -1 : referralObj.getLong(P_REFERRAL_ID),
+												 referralObj.isNull(P_DATE) ? "" : referralObj.getString(P_DATE),
+											 	 referralObj.isNull(P_TOTAL_INVITEE) ? 0 : referralObj.getInt(P_TOTAL_INVITEE),
+												 referralObj.isNull(P_TOTAL_CLICK_THROUGH) ? 0 : referralObj.getInt(P_TOTAL_CLICK_THROUGH));
 								referrals.add(referral);
 							}
 						}
@@ -731,7 +753,7 @@ public class Discoverer {
 				}
 			}
 			else {
-				throw new IllegalStateException(INSTALL_CODE_REQUIRED);
+				throw new AgeException(AgeException.E_NOT_YET_DISCOVERED, "Invalid State. Must invoke discover() first");
 			}
 		}
 		catch(AgeException e) {
@@ -788,7 +810,7 @@ public class Discoverer {
 		}
 	}
 	
-	private boolean isDiscovered() {
+	private boolean hasPreviouslyDiscovered() {
 		int count = loadLastPhoneCount(context);
 		
 		if(count > 0) {

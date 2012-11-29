@@ -17,9 +17,15 @@ import com.hookmobile.age.Direction;
 import com.hookmobile.age.Discoverer;
 import com.hookmobile.age.R;
 
+import java.util.regex.*;
+
 public class HookMobileSample extends Activity implements OnClickListener {
 	
-	private String appKey = "Your-App-Key";
+	/**  
+	 * Replace with your assigned App Key by registering at www.hookmobile.com
+	 */
+//	private String appKey = "99c2abe1-a8c4-41f1-a1c5-7e7b98e73d48";
+	private String appKey = "App-Key";
 	
 	private static int HANDLE_SHOW_LOADING = 1;
 	private static int HANDLE_HIDE_LOADING = 2; 
@@ -63,7 +69,8 @@ public class HookMobileSample extends Activity implements OnClickListener {
     
 	
 	@Override
-	protected void onCreate(android.os.Bundle savedInstanceState) {
+	protected void onCreate(android.os.Bundle savedInstanceState) {	
+
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
 		
@@ -86,7 +93,13 @@ public class HookMobileSample extends Activity implements OnClickListener {
 		installsButton.setEnabled(false);
 		referralsButton = (Button)findViewById(R.id.referrals);
 		referralsButton.setOnClickListener(this);
-		referralsButton.setEnabled(false);
+		referralsButton.setEnabled(false);		
+		
+		//Verify appKey format
+		if(!verifyAppKeyFormat(appKey))
+		{
+			showErrorDialog("Finished", "AppKey is in invalid format. Please check it again.", "Dismiss");
+		}
     	
 		Discoverer.activate(this, appKey);
     	
@@ -345,6 +358,17 @@ public class HookMobileSample extends Activity implements OnClickListener {
     			}
 			})
 			.show();
+	}
+	
+	//Judge if the appKey is a valid appKey
+	private boolean verifyAppKeyFormat(String appKey)
+	{
+		Pattern pattern = Pattern.compile("^\\w{8}-\\w{4}-\\w{4}-\\w{4}-\\w{12}$");
+		Matcher matcher = pattern.matcher(appKey.trim());
+		if(matcher.matches())
+			return true;
+		else
+			return false;
 	}
     
 }

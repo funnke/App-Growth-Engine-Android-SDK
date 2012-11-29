@@ -1,8 +1,8 @@
-package com.hookmobile.age;
+package com.hookmobile.age.utils;
 
 import static com.hookmobile.age.AgeConstants.AGE_LOG;
 import static com.hookmobile.age.AgeConstants.AGE_PREFERENCES;
-import static com.hookmobile.age.AgeUtils.isEmptyStr;
+import static com.hookmobile.age.utils.AgeUtils.isEmptyStr;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.net.wifi.WifiInfo;
@@ -10,14 +10,14 @@ import android.net.wifi.WifiManager;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 
-class TapjoyManager {
+public class TapjoyManager {
 
 	private static String deviceID;			// Device ID (IMEI/MEID).
 	private static String macAddress;		// Mac address.
 	private static String serialID;			// Serial ID.
 	
 	
-	static void init(Context context) {
+	public static void init(Context context) {
     	Log.i(AGE_LOG, "Tapjoy SDK Version: 1.0.1");
     	
 		try {
@@ -140,11 +140,11 @@ class TapjoyManager {
 		}
 	}
 	
-	static String getTapjoyUDID() {
+	public static String getTapjoyUDID() {
     	return deviceID;
     }
 	
-	static String getMacAddress() {
+	public static String getMacAddress() {
 		return macAddress;
 	}
 	

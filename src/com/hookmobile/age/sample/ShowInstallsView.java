@@ -1,6 +1,6 @@
 package com.hookmobile.age.sample;
 
-import static com.hookmobile.age.AgeUtils.lookupNameByPhone;
+import static com.hookmobile.age.utils.AgeUtils.lookupNameByPhone;
 
 import java.util.List;
 

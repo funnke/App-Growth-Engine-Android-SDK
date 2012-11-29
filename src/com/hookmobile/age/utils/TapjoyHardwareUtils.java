@@ -7,7 +7,7 @@
 //
 //The Tapjoy SDK is bound by the Tapjoy SDK License Agreement can be found here: https://www.tapjoy.com/sdk/license
 
-package com.hookmobile.age;
+package com.hookmobile.age.utils;
 
 /**
  * This class retrieves the serial number of the device.
@@ -17,7 +17,7 @@ package com.hookmobile.age;
  * For devices running a lower version of Android, this class never gets loaded
  * and the device will run fine.
  */
-class TapjoyHardwareUtils {
+public class TapjoyHardwareUtils {
 	
 	public TapjoyHardwareUtils() {
 		

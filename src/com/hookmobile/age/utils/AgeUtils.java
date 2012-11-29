@@ -1,4 +1,4 @@
-package com.hookmobile.age;
+package com.hookmobile.age.utils;
 
 import static com.hookmobile.age.AgeConstants.AGE_LAST_PHONE_COUNT;
 import static com.hookmobile.age.AgeConstants.AGE_PREFERENCES;
@@ -6,6 +6,9 @@ import static com.hookmobile.age.AgeConstants.AGE_PREFERENCES;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import com.hookmobile.age.Discoverer;
+
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -24,6 +27,15 @@ import android.telephony.TelephonyManager;
 public class AgeUtils {
 	
 	private static Cursor contactCursor;
+	
+	/**
+     * Creates a new AgeUtils instance. 
+     * 
+     */
+	public AgeUtils()
+	{
+		super();
+	}
 	
 	
     /**
@@ -102,10 +114,10 @@ public class AgeUtils {
     }
     
     /**
-     * Checks if this device is connected to an internet.
+     * Checks if this device is connected to an Internet.
      * 
      * @param context the Android context.
-     * @return true if this device is connected to an internet; false otherwise.
+     * @return true if this device is connected to an Internet; false otherwise.
      */
     public static boolean isOnline(Context context) {
     	ConnectivityManager cm = (ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -191,10 +203,11 @@ public class AgeUtils {
      * Gets the entire address book in JSON format.
      * 
      * @param context the Android context.
+     * @param includeContactName include contact first, last name in JSON
      * @return a JSON representation of the address book.
      */
-    public static String getAddressbook(Context context) {
-    	return getAddressbook(context, Integer.MAX_VALUE);
+    public static JSONArray getAddressbook(Context context, boolean includeContactName) {
+    	return getAddressbook(context, Discoverer.MAX_UPLOAD_SIZE, includeContactName);
     }
     
 	/**
@@ -202,13 +215,24 @@ public class AgeUtils {
 	 * 
 	 * @param context the Android context.
 	 * @param limit the max size of contacts to fetch.
+     * @param includeContactName include contact first, last name in JSON
 	 * @return a JSON representation of the address book.
 	 */
-    public static String getAddressbook(Context context, int limit) {
-    	return getAddressbook(context, limit, false);
+    public static JSONArray getAddressbook(Context context, int limit, boolean includeContactName) {
+    	return getAddressbook(context, limit, false, includeContactName);
     }
+
     
-	static String getAddressbook(Context context, int limit, boolean sleep) {
+	/**
+	 * Gets contacts of the address book limited up to max size.
+	 * 
+	 * @param context the Android context.
+	 * @param limit the max size of contacts to fetch.
+	 * @param sleep yield to other process while retrieving address book contacts.
+     * @param includeContactName include contact first, last name in JSON
+	 * @return a JSON representation of the address book.
+	 */
+	public static JSONArray getAddressbook(Context context, int limit, boolean sleep, boolean includeContactName) {
 		JSONArray addressBook = new JSONArray();
 		String lastName = null;
 		String firstName = null;
@@ -247,8 +271,10 @@ public class AgeUtils {
 							}
 							
 							contactObj.put("phone", phone);
-							contactObj.put("firstName", firstName != null ? firstName : "");
-							contactObj.put("lastName", lastName != null ? lastName : "");
+							if (includeContactName) {
+								contactObj.put("firstName", firstName != null ? firstName : "");
+								contactObj.put("lastName", lastName != null ? lastName : "");
+							}
 							addressBook.put(contactObj);
 						}
 						
@@ -271,10 +297,10 @@ public class AgeUtils {
 			contactCursor.close();
 		}
 		
-		return addressBook.toString();
+		return addressBook;
     }
 
-	static String getAddressHash(Context context) {
+	public static String getAddressHash(Context context) {
 		contactCursor = getContactCursor(context);
 		
 		try {
@@ -304,19 +330,19 @@ public class AgeUtils {
 		}
 	}
 	
-    static String queryDevicePhone(Context context) {
+    public static String queryDevicePhone(Context context) {
     	TelephonyManager manager = (TelephonyManager)context.getSystemService(Context.TELEPHONY_SERVICE); 
     	
     	return normalizePhone(manager.getLine1Number());
     }
     
-    static int loadLastPhoneCount(Context context) {
+    public static int loadLastPhoneCount(Context context) {
 		SharedPreferences prefs = context.getSharedPreferences(AGE_PREFERENCES, Context.MODE_PRIVATE);
 		
 		return prefs.getInt(AGE_LAST_PHONE_COUNT, 0);
 	}
 	
-	static void saveLastPhoneCount(Context context, int count) {
+	public static void saveLastPhoneCount(Context context, int count) {
 		SharedPreferences prefs = context.getSharedPreferences(AGE_PREFERENCES, Context.MODE_PRIVATE);
 		Editor editor = prefs.edit();
 		editor.putInt(AGE_LAST_PHONE_COUNT, count);

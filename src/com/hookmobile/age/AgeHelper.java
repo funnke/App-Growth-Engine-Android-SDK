@@ -1,6 +1,6 @@
 package com.hookmobile.age;
 
-import static com.hookmobile.age.AgeUtils.normalizePhone;
+import static com.hookmobile.age.utils.AgeUtils.normalizePhone;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -24,6 +24,8 @@ import org.apache.http.protocol.HTTP;
 import org.apache.http.util.EntityUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import com.hookmobile.age.utils.TapjoyHardwareUtils;
 
 import android.content.Context;
 import android.content.SharedPreferences;

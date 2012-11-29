@@ -1,8 +1,8 @@
-package com.hookmobile.age;
+package com.hookmobile.age.utils;
 
-class MurmurHash {
+public class MurmurHash {
 
-	static int hash(byte[] data, int seed) {
+	public static int hash(byte[] data, int seed) {
 		int length = data.length;
 		int m = 0x5bd1e995;
 		int r = 24;
