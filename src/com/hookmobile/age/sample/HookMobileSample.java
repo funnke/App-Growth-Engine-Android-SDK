@@ -24,7 +24,6 @@ public class HookMobileSample extends Activity implements OnClickListener {
 	/**  
 	 * Replace with your assigned App Key by registering at www.hookmobile.com
 	 */
-//	private String appKey = "99c2abe1-a8c4-41f1-a1c5-7e7b98e73d48";
 	private String appKey = "App-Key";
 	
 	private static int HANDLE_SHOW_LOADING = 1;
