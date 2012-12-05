@@ -1,4 +1,4 @@
-# App Growth Engine for Android v1.0.2
+# App Growth Engine for Android v1.0.3
 
 Hook Mobile has developed a unique offering for mobile app developers: App Growth Engine (AGE) SDK.
 This open source Java library allows you to integrate AGE into your Android application.
