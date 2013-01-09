@@ -810,7 +810,7 @@ public class Discoverer {
 		}
 	}
 	
-	private boolean hasPreviouslyDiscovered() {
+	boolean hasPreviouslyDiscovered() {
 		int count = loadLastPhoneCount(context);
 		
 		if(count > 0) {
