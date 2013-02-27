@@ -1,3 +1,10 @@
+1.1.3
+* bugfix: native SMS invitation not working when useVirtualNumber is set
+to false
+* enhancement: add support for app supplied custom parameter to
+be associated to the app install.  This custom parameter will be used on
+server callback to identify app install
+
 1.0.2
  * Support Tapjoy UDID.
  * Optimize address book scanning.
