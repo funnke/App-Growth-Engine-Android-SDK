@@ -25,6 +25,7 @@ import static com.hookmobile.age.AgeConstants.P_INSTALL_REFERRER;
 import static com.hookmobile.age.AgeConstants.P_REFERRAL_MESSAGE;
 import static com.hookmobile.age.AgeConstants.P_SDK_VERSION;
 import static com.hookmobile.age.AgeConstants.P_SEND_NOW;
+import static com.hookmobile.age.AgeConstants.P_CUSTOM_PARAM;
 import static com.hookmobile.age.AgeConstants.P_TAPJOY_UDID;
 import static com.hookmobile.age.AgeConstants.P_TOTAL_CLICK_THROUGH;
 import static com.hookmobile.age.AgeConstants.P_TOTAL_INVITEE;
@@ -82,7 +83,7 @@ public class Discoverer {
 	public static final int MAX_UPLOAD_SIZE = 2000; 
 	public static final int FIRST_UPLOAD_SIZE = 200; 
 
-	private static final String AGE_SDK_VERSION = "android/1.1.0";
+	private static final String AGE_SDK_VERSION = "android/1.1.3";
 	private static final String DEFAULT_REFERRAL = "This is a cool app: %app%, check it out here %link%";
 	
 	private static String server = "https://age.hookmobile.com";
@@ -115,7 +116,19 @@ public class Discoverer {
 		Discoverer.instance.newInstall();
 	}
     
-	
+	/**
+	 * Activates the AGE service. This method must be invoked when the app is launched.
+	 * This method should only be invoked once.  
+	 * @param context the Android context. 
+	 * @param appKey the app key you register on Hook Mobile developers portal.
+	 * @param customParam for storing custom parameter such as app assigned user_id.
+	 */
+	public static void activate(Context context, String appKey, String customParam) {
+		Discoverer.context = context.getApplicationContext();
+		Discoverer.instance = new Discoverer(appKey);
+		Discoverer.instance.newInstall(customParam);
+	}
+  
 	/**
 	 * Gets the Discoverer singleton instance.  Must be preceded with call to
 	 * {@link #activate(Context, String)} to validate your assigned appKey.
@@ -488,6 +501,10 @@ public class Discoverer {
 	}
 
 	private void newInstall() {
+		newInstall(null);
+	}
+	
+	private void newInstall(final String customParam) {
 		TapjoyManager.init(context);
 		newInstallInvokeTime = System.currentTimeMillis();
 		
@@ -510,10 +527,14 @@ public class Discoverer {
 						form.add(new BasicNameValuePair(P_ADDRESS_HASH, getAddressHash(context)));
 						form.add(new BasicNameValuePair(P_SDK_VERSION, AGE_SDK_VERSION));
 						form.add(new BasicNameValuePair(P_DEVICE_INFO, getDeviceInfo(context)));
+						if (customParam != null)
+							form.add(new BasicNameValuePair(P_CUSTOM_PARAM, customParam));
 						String installReferrer = AgeHelper.retrieveInstallReferrer(context);
 						if (installReferrer != null)
 							form.add(new BasicNameValuePair(P_INSTALL_REFERRER, installReferrer));
 
+						System.out.println("customParam=" + customParam);
+						
 						AgeResponse response = doPost(url, form);
 						
 						if(response.isSuccess()) {
