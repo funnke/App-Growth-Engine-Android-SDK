@@ -28,8 +28,9 @@ public class AgeConstants {
 	public static final String P_REFERRALS             = "referrals";
 	public static final String P_REFERENCE             = "reference";
 	public static final String P_SDK_VERSION			= "sdkVersion";
+	public static final String P_CUSTOM_PARAM          = "customParam";
 	public static final String P_SEND_NOW              = "sendNow";
-	public static final String P_STATUS				= "status";
+	public static final String P_STATUS					= "status";
 	public static final String P_TAPJOY_UDID			= "tapjoyUdid";
 	public static final String P_TOTAL_CLICK_THROUGH   = "totalClickThrough";
 	public static final String P_TOTAL_INVITEE         = "totalInvitee";
