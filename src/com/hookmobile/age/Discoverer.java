@@ -429,7 +429,7 @@ public class Discoverer {
 		final String installCode = this.getInstallCode();
 		
 		if (installCode == null)
-			throw new IllegalStateException("Please activate first.");
+			return;
 
 		Thread a = new Thread() {
 			@Override
