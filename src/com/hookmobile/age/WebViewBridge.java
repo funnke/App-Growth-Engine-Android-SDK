@@ -113,7 +113,6 @@ public class WebViewBridge {
 
 	/**
 	 * initiate address book discovery process.
-	 * @param inviteWebView
 	 */
 	public void discover() {
 
