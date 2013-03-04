@@ -7,6 +7,7 @@ public class AgeConstants {
 	public static final String AGE_CURRENT_APP_KEY     = "current_app_key";
 	public static final String AGE_INSTALL_TOKEN		= "install_token";
 	public static final String AGE_LAST_PHONE_COUNT    = "last_phone_count";
+	public static final String AGE_QUEUED_TRACKING_EVENTS  = "queued_tracking_events";
 	
 	public static final String P_ADDRESSBOOK           = "addressBook";
 	public static final String P_ADDRESS_HASH			= "addrHash";
@@ -38,6 +39,8 @@ public class AgeConstants {
 	public static final String P_VERIFIED              = "verified";
 	public static final String P_VERIFY_MESSAGE        = "verifyMessage";
 	public static final String P_VERIFY_MT             = "verifyMt";
+	public static final String P_EVENT_NAME            = "eventName";
+	public static final String P_EVENT_VALUE           = "eventValue";
 	
 	public static final String[] EXPECTED_PARAMETERS = { "utm_source",
 		"utm_medium", "utm_term", "utm_content", "utm_campaign", "hookid" };
