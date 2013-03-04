@@ -428,6 +428,9 @@ public class Discoverer {
 	public void trackEvent(final String eventName, final String eventValue) {
 		final String installCode = this.getInstallCode();
 		
+		if (installCode == null)
+			throw new IllegalStateException("Please activate first.");
+
 		Thread a = new Thread() {
 			@Override
 			public void run() {
