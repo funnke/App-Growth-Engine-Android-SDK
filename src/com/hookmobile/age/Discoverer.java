@@ -5,6 +5,7 @@ import static com.hookmobile.age.AgeConstants.AGE_CURRENT_APP_KEY;
 import static com.hookmobile.age.AgeConstants.AGE_INSTALL_TOKEN;
 import static com.hookmobile.age.AgeConstants.AGE_LOG;
 import static com.hookmobile.age.AgeConstants.AGE_PREFERENCES;
+import static com.hookmobile.age.AgeConstants.AGE_QUEUED_TRACKING_EVENTS;
 import static com.hookmobile.age.AgeException.E_ADDRESSBOOK_EXPIRED;
 import static com.hookmobile.age.AgeConstants.P_ADDRESSBOOK;
 import static com.hookmobile.age.AgeConstants.P_ADDRESS_HASH;
@@ -33,6 +34,8 @@ import static com.hookmobile.age.AgeConstants.P_USE_VIRTUAL_NUMBER;
 import static com.hookmobile.age.AgeConstants.P_VERIFIED;
 import static com.hookmobile.age.AgeConstants.P_VERIFY_MESSAGE;
 import static com.hookmobile.age.AgeConstants.P_VERIFY_MT;
+import static com.hookmobile.age.AgeConstants.P_EVENT_NAME;
+import static com.hookmobile.age.AgeConstants.P_EVENT_VALUE;
 import static com.hookmobile.age.utils.AgeUtils.getAddressHash;
 import static com.hookmobile.age.utils.AgeUtils.getAddressbook;
 import static com.hookmobile.age.utils.AgeUtils.getDeviceInfo;
@@ -45,12 +48,14 @@ import static com.hookmobile.age.utils.AgeUtils.saveLastPhoneCount;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 
 import org.apache.http.NameValuePair;
 import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.content.Context;
@@ -103,7 +108,8 @@ public class Discoverer {
 	private List<Lead> cachedLeads;
 	private List<String> cachedInstalls;
 	private List<Referral> cachedReferrals;
-    
+	private JSONObject queuedTrackingEvents;
+	
 	/**
 	 * Activates the AGE service. This method must be invoked when the app is launched.
 	 * This method should only be invoked once.  
@@ -114,6 +120,7 @@ public class Discoverer {
 		Discoverer.context = context.getApplicationContext();
 		Discoverer.instance = new Discoverer(appKey);
 		Discoverer.instance.newInstall();
+		Discoverer.instance.sendQueuedEvents();
 	}
     
 	/**
@@ -127,6 +134,7 @@ public class Discoverer {
 		Discoverer.context = context.getApplicationContext();
 		Discoverer.instance = new Discoverer(appKey);
 		Discoverer.instance.newInstall(customParam);
+		Discoverer.instance.sendQueuedEvents();
 	}
   
 	/**
@@ -405,6 +413,60 @@ public class Discoverer {
 		Discoverer.passContactName = passContactName;
 	}
 
+	/**
+	 * Send out any previously queued events to server.
+	 */
+	public void sendQueuedEvents() {
+		trackEvent(null, null);
+	}
+
+	/**
+	 * Track user engagement with user defined milestones.  
+	 * @param eventName event name to be tracked.
+	 * @param eventValue event value to be tracked.
+	 */
+	public void trackEvent(final String eventName, final String eventValue) {
+		final String installCode = this.getInstallCode();
+		
+		Thread a = new Thread() {
+			@Override
+			public void run() {
+				JSONObject queuedTrackingEvents = loadQueuedTrackingEvents();
+				try {
+					if(installCode != null) {
+						if (eventName != null && eventName.length() > 0)
+							queuedTrackingEvents.put(eventName, eventValue);
+						
+						if (isOnline(context)) {
+							for (@SuppressWarnings("unchecked")
+							Iterator<String> itr=queuedTrackingEvents.keys(); itr.hasNext();) {
+								String key = itr.next();
+								String value = queuedTrackingEvents.getString(key);
+								String url = server + "/trackevent";
+								List<NameValuePair> form = new ArrayList<NameValuePair>();
+								form.add(new BasicNameValuePair(P_APP_KEY, getAppKey()));
+								form.add(new BasicNameValuePair(P_INSTALL_CODE, installCode));
+								form.add(new BasicNameValuePair(P_EVENT_NAME, key));
+								form.add(new BasicNameValuePair(P_EVENT_VALUE, value));
+								form.add(new BasicNameValuePair(P_SDK_VERSION, AGE_SDK_VERSION));
+								
+								AgeResponse response = doPost(url, form);
+								Log.w(AGE_LOG, response.getMessage());
+							}
+							queuedTrackingEvents = null;
+						}
+					}
+				} catch(Throwable t) {
+					Log.i(AGE_LOG, t.getMessage());
+				} finally {
+					saveQueuedTrackingEvents(queuedTrackingEvents);
+				}
+			}
+		};
+		a.start();
+		a = null;
+	}
+	
 	private Discoverer(String appKey) {
 		if(appKey == null) {
 			throw new IllegalStateException("App key cannot be null.");
@@ -532,8 +594,6 @@ public class Discoverer {
 						String installReferrer = AgeHelper.retrieveInstallReferrer(context);
 						if (installReferrer != null)
 							form.add(new BasicNameValuePair(P_INSTALL_REFERRER, installReferrer));
-
-						System.out.println("customParam=" + customParam);
 						
 						AgeResponse response = doPost(url, form);
 						
@@ -876,6 +936,31 @@ public class Discoverer {
 				}
 			}
 		}
+	}
+	
+	private JSONObject loadQueuedTrackingEvents() {
+		if (this.queuedTrackingEvents == null) {
+			SharedPreferences prefs = context.getSharedPreferences(AGE_PREFERENCES, Context.MODE_PRIVATE);
+			String jsonString = prefs.getString(AGE_QUEUED_TRACKING_EVENTS, null);
+	    	if (jsonString != null) {
+	    		try {
+	    			this.queuedTrackingEvents = new JSONObject(jsonString);
+				} catch (JSONException e) {
+					this.queuedTrackingEvents = new JSONObject();
+				}
+	    	} else {
+	    		this.queuedTrackingEvents = new JSONObject();
+	    	}
+		}
+		return this.queuedTrackingEvents;
+	}
+    
+	private void saveQueuedTrackingEvents(JSONObject queuedTrackingEvents) {
+		this.queuedTrackingEvents = queuedTrackingEvents;
+		SharedPreferences prefs = context.getSharedPreferences(AGE_PREFERENCES, Context.MODE_PRIVATE);
+		Editor editor = prefs.edit();
+		editor.putString(AGE_QUEUED_TRACKING_EVENTS, queuedTrackingEvents != null ? queuedTrackingEvents.toString() : null);
+		editor.commit();
 	}
 	
 }
