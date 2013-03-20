@@ -51,6 +51,9 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.http.NameValuePair;
 import org.apache.http.message.BasicNameValuePair;
@@ -88,17 +91,18 @@ public class Discoverer {
 	public static final int MAX_UPLOAD_SIZE = 2000; 
 	public static final int FIRST_UPLOAD_SIZE = 200; 
 
-	private static final String AGE_SDK_VERSION = "android/1.1.3";
+	private static final String AGE_SDK_VERSION = "android/1.1.5";
 	private static final String DEFAULT_REFERRAL = "This is a cool app: %app%, check it out here %link%";
 	
-	private static String server = "https://age.hookmobile.com";
-	private static String virtualNumber = "+13025175040";
+	private static final String server = "https://age.hookmobile.com";
+	private static final String virtualNumber = "+13025175040";
 	
 	private static Discoverer instance;
-	private static Context context;
+	private Context context;
 	private static boolean passContactName = true;
 	
 	private volatile long newInstallInvokeTime;
+	private AtomicBoolean newInstallPending = new AtomicBoolean(false);
 	
 	private String appKey;
 	private String devicePhone;
@@ -117,10 +121,7 @@ public class Discoverer {
 	 * @param appKey the app key you register on Hook Mobile developers portal.
 	 */
 	public static void activate(Context context, String appKey) {
-		Discoverer.context = context.getApplicationContext();
-		Discoverer.instance = new Discoverer(appKey);
-		Discoverer.instance.newInstall();
-		Discoverer.instance.sendQueuedEvents();
+		activate(context, appKey, null);
 	}
     
 	/**
@@ -131,9 +132,15 @@ public class Discoverer {
 	 * @param customParam for storing custom parameter such as app assigned user_id.
 	 */
 	public static void activate(Context context, String appKey, String customParam) {
-		Discoverer.context = context.getApplicationContext();
-		Discoverer.instance = new Discoverer(appKey);
-		Discoverer.instance.newInstall(customParam);
+		if (Discoverer.instance == null) {
+			Discoverer.instance = new Discoverer(appKey, context.getApplicationContext(), customParam);
+		}
+		
+		// create new install if installCode does not exists and no pending call to create new install.
+		if (!Discoverer.instance.isNewInstallPending()) {
+			Discoverer.instance.newInstall(customParam);
+		}
+		
 		Discoverer.instance.sendQueuedEvents();
 	}
   
@@ -470,22 +477,32 @@ public class Discoverer {
 		a = null;
 	}
 	
-	private Discoverer(String appKey) {
+	private Discoverer(String appKey, Context context, String customParam) {
 		if(appKey == null) {
 			throw new IllegalStateException("App key cannot be null.");
 		}
+    	try {
+    		this.context = context;
+    		this.setNewInstallPending(true);
+    		this.appKey = appKey;
+    		this.devicePhone = queryDevicePhone(context);
+    		this.installCode = loadInstallCode();
+    		this.installToken = getInstallToken();
+        	
+    		saveCurrentAppKey(context, appKey);
+        	
+    		Log.i(AGE_LOG, "AGE SDK Version: "+ AGE_SDK_VERSION);
+    		Log.i(AGE_LOG, "devicePhone: "+ devicePhone);
+    		Log.i(AGE_LOG, "installCode: "+ installCode);
+    		Log.i(AGE_LOG, "installToken: "+ installToken);
+    		
+    		newInstall(customParam);
+    	} catch (Throwable e) {
+    		e.printStackTrace();
+    		Log.e("Error in Discover constructor", e.getMessage(), e);
+    		this.setNewInstallPending(false);
+    	}
     	
-		this.appKey = appKey;
-		this.devicePhone = queryDevicePhone(context);
-		this.installCode = loadInstallCode();
-		this.installToken = getInstallToken();
-    	
-		saveCurrentAppKey(context, appKey);
-    	
-		Log.i(AGE_LOG, "AGE SDK Version: "+ AGE_SDK_VERSION);
-		Log.i(AGE_LOG, "devicePhone: "+ devicePhone);
-		Log.i(AGE_LOG, "installCode: "+ installCode);
-		Log.i(AGE_LOG, "installToken: "+ installToken);
 	}
     
 	/**
@@ -553,25 +570,20 @@ public class Discoverer {
 		return Collections.<Referral>emptyList();
 	}
 	
-	public static void referUA(String referUAValue){
-		GoogleAnalyticsTracker tracker;
-		tracker = GoogleAnalyticsTracker.getInstance();
-		tracker.startNewSession(referUAValue, context);
-		tracker.setCustomVar(1, "Medium", "Mobile App");
-		tracker.trackPageView("/main");
-		Log.v("ReferralReceiver", "Dispacthing and closing");
-		tracker.dispatch();
-		tracker.stopSession();
-		
-	}
+//	public static void referUA(String referUAValue){
+//		GoogleAnalyticsTracker tracker;
+//		tracker = GoogleAnalyticsTracker.getInstance();
+//		tracker.startNewSession(referUAValue, context);
+//		tracker.setCustomVar(1, "Medium", "Mobile App");
+//		tracker.trackPageView("/main");
+//		Log.v("ReferralReceiver", "Dispacthing and closing");
+//		tracker.dispatch();
+//		tracker.stopSession();
+//		
+//	}
 
-	private void newInstall() {
-		newInstall(null);
-	}
-	
 	private void newInstall(final String customParam) {
-		TapjoyManager.init(context);
-		newInstallInvokeTime = System.currentTimeMillis();
+		this.newInstallInvokeTime = System.currentTimeMillis();
 		
 		Thread a = new Thread() {
 			@Override
@@ -582,6 +594,8 @@ public class Discoverer {
 					Log.i(AGE_LOG, getAddressHash(context));
 					
 					if(installCode == null && isOnline(context)) {
+						Log.w(AGE_LOG, "calling /newInstall..");
+						TapjoyManager.init(context);
 						String url = server + "/newinstall";
 						List<NameValuePair> form = new ArrayList<NameValuePair>();
 						form.add(new BasicNameValuePair(P_INSTALL_TOKEN, getInstallToken()));
@@ -613,6 +627,8 @@ public class Discoverer {
 				}
 				catch(Throwable t) {
 					Log.i(AGE_LOG, t.getMessage());
+				} finally {
+					setNewInstallPending(false);
 				}
 				
 				newInstallInvokeTime = 0;
@@ -964,6 +980,15 @@ public class Discoverer {
 		Editor editor = prefs.edit();
 		editor.putString(AGE_QUEUED_TRACKING_EVENTS, queuedTrackingEvents != null ? queuedTrackingEvents.toString() : null);
 		editor.commit();
+	}
+
+	public boolean isNewInstallPending() {
+		return newInstallPending.get();
+	}
+
+	public void setNewInstallPending(boolean newValue) {
+		this.newInstallPending.set(newValue);
+		Log.d("setNewInstallPending", "updated to " + newValue);
 	}
 	
 }
