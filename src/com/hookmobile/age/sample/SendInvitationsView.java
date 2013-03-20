@@ -136,22 +136,31 @@ public class SendInvitationsView extends ListActivity {
 	}
 	
 	private void sendReferralFromUserPhone() {
-		handler.sendEmptyMessage(HANDLE_SHOWLOADING);
-		
-		List<String> phones = getSelectedPhones();
-		
-		if(phones.size() > 0) {
-			try {
-				Discoverer.getInstance().newReferral(phones, false, null);
+		Thread a = new Thread() {
+			@Override
+			public void run() {
+				super.run();
+				handler.sendEmptyMessage(HANDLE_SHOWLOADING);
 				
-				showMessage("Referral Success");
+				List<String> phones = getSelectedPhones();
+				
+				if(phones.size() > 0) {
+					try {
+						Discoverer.getInstance().newReferral(phones, false, null);
+						
+						showMessage("Referral Success");
+					}
+					catch(AgeException e) {
+						showMessage(e.getMessage() != null ? e.getMessage() : "Referral Error");
+					}
+				}
+				
+				handler.sendEmptyMessage(HANDLE_HIDELOADING);
 			}
-			catch(AgeException e) {
-				showMessage(e.getMessage() != null ? e.getMessage() : "Referral Error");
-			}
-		}
-		
-		handler.sendEmptyMessage(HANDLE_HIDELOADING);
+		};
+		a.start();
+		a = null;
+
 	}
 
 	private List<String> getSelectedPhones() {
