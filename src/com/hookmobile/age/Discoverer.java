@@ -28,6 +28,8 @@ import static com.hookmobile.age.AgeConstants.P_SDK_VERSION;
 import static com.hookmobile.age.AgeConstants.P_SEND_NOW;
 import static com.hookmobile.age.AgeConstants.P_CUSTOM_PARAM;
 import static com.hookmobile.age.AgeConstants.P_TAPJOY_UDID;
+import static com.hookmobile.age.AgeConstants.P_ISO_COUNTRY_CODE;
+import static com.hookmobile.age.AgeConstants.P_OPERATOR_CODE;
 import static com.hookmobile.age.AgeConstants.P_TOTAL_CLICK_THROUGH;
 import static com.hookmobile.age.AgeConstants.P_TOTAL_INVITEE;
 import static com.hookmobile.age.AgeConstants.P_USE_VIRTUAL_NUMBER;
@@ -50,9 +52,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.http.NameValuePair;
@@ -67,8 +68,8 @@ import android.content.SharedPreferences.Editor;
 import android.telephony.SmsManager;
 import android.util.Log;
 
-import com.google.android.apps.analytics.GoogleAnalyticsTracker;
 import com.hookmobile.age.AgeClient.AgeResponse;
+import com.hookmobile.age.utils.AgeUtils;
 import com.hookmobile.age.utils.TapjoyManager;
 
 /**
@@ -269,6 +270,8 @@ public class Discoverer {
 				}
 				form.add(new BasicNameValuePair(P_USE_VIRTUAL_NUMBER, String.valueOf(useVirtualNumber)));
 				form.add(new BasicNameValuePair(P_SEND_NOW, "true"));
+				form.add(new BasicNameValuePair(P_ISO_COUNTRY_CODE, AgeUtils.getIsoCountryCode()));
+				form.add(new BasicNameValuePair(P_OPERATOR_CODE, AgeUtils.getOperatorCode()));
 				if(name != null) {
 					form.add(new BasicNameValuePair(P_NAME, name));
 				}
@@ -495,10 +498,11 @@ public class Discoverer {
     		Log.i(AGE_LOG, "devicePhone: "+ devicePhone);
     		Log.i(AGE_LOG, "installCode: "+ installCode);
     		Log.i(AGE_LOG, "installToken: "+ installToken);
+    		Log.i(AGE_LOG, "isoCountryCode: "+ AgeUtils.getIsoCountryCode());
+    		Log.i(AGE_LOG, "operatorCode: "+ AgeUtils.getOperatorCode());
     		
     		newInstall(customParam);
     	} catch (Throwable e) {
-    		e.printStackTrace();
     		Log.e("Error in Discover constructor", e.getMessage(), e);
     		this.setNewInstallPending(false);
     	}
@@ -606,6 +610,9 @@ public class Discoverer {
 						form.add(new BasicNameValuePair(P_ADDRESS_HASH, getAddressHash(context)));
 						form.add(new BasicNameValuePair(P_SDK_VERSION, AGE_SDK_VERSION));
 						form.add(new BasicNameValuePair(P_DEVICE_INFO, getDeviceInfo(context)));
+						form.add(new BasicNameValuePair(P_ISO_COUNTRY_CODE, AgeUtils.getIsoCountryCode()));
+						form.add(new BasicNameValuePair(P_OPERATOR_CODE, AgeUtils.getOperatorCode()));
+						
 						if (customParam != null)
 							form.add(new BasicNameValuePair(P_CUSTOM_PARAM, customParam));
 						String installReferrer = AgeHelper.retrieveInstallReferrer(context);
@@ -733,6 +740,78 @@ public class Discoverer {
 		}
 	}
     
+	/**
+	 * Issues query against server on type of phone number whether it is mobile, fixed or other.
+	 * 
+	 * @return
+	 * @throws AgeException 
+	 * @throws Exception
+	 */
+	public boolean queryPhoneNumberType(Map<String, Boolean> phoneList) throws AgeException {
+
+		try {
+			String installCode = getInstallCode();
+
+			if (installCode != null) {
+
+				String url = server + "/queryphonenumbertype";
+				List<NameValuePair> form = new ArrayList<NameValuePair>();
+
+				form.add(new BasicNameValuePair(P_APP_KEY, getAppKey()));
+				form.add(new BasicNameValuePair(P_INSTALL_CODE, getInstallCode()));
+				form.add(new BasicNameValuePair(P_ISO_COUNTRY_CODE, AgeUtils.getIsoCountryCode()));
+				form.add(new BasicNameValuePair(P_OPERATOR_CODE, AgeUtils.getOperatorCode()));
+				for (String phone : phoneList.keySet())
+					form.add(new BasicNameValuePair(P_PHONE, phone));
+
+				AgeResponse response = doPost(url, form);
+
+				if (response.isSuccess()) {
+					JSONObject json = response.getJson();
+					JSONArray jsonArray = json.isNull("phones") ? null : json.getJSONArray("phones");
+					boolean hasMobilePhone = false;
+					
+					if (jsonArray != null) {
+
+						for (int i = 0; i < jsonArray.length(); i++) {
+							if (!jsonArray.isNull(i)) {
+								JSONObject phoneObj = jsonArray.getJSONObject(i);
+								String lineType = phoneObj.isNull("lineType") ? "Unknown" : phoneObj.getString("lineType");
+								String phone = phoneObj.isNull("phone") ? "Unknow" : phoneObj.getString("phone");
+								
+								if(lineType.equalsIgnoreCase("mobile")){
+									phoneList.put(phone, true);
+									hasMobilePhone = true;
+								} else
+									phoneList.put(phone, false);
+							}
+						}
+					}
+					
+					return hasMobilePhone;
+
+				} else {
+					if (response.getCode() == E_ADDRESSBOOK_EXPIRED) {
+						Log.i(AGE_LOG, "Rediscovery required");
+
+						saveLastPhoneCount(context, 0);
+					}
+
+					throw new AgeException(response.getCode(),
+							response.getMessage());
+				}
+			} else {
+				throw new AgeException(AgeException.E_NOT_YET_DISCOVERED,
+						"Invalid State. Must invoke discover() first");
+			}
+
+		} catch (AgeException e) {
+			throw e;
+		} catch (Exception e) {
+			throw new AgeException(e);
+		}
+
+	}
 
 	private boolean discoverSync() throws Exception {
 		waitForNewInstall();
@@ -768,6 +847,8 @@ public class Discoverer {
 			form.add(new BasicNameValuePair(P_SDK_VERSION, AGE_SDK_VERSION));
 			form.add(new BasicNameValuePair(P_ADDRESSBOOK, addressBook.toString()));
 			form.add(new BasicNameValuePair(P_DEVICE_INFO, getDeviceInfo(context)));
+			form.add(new BasicNameValuePair(P_ISO_COUNTRY_CODE, AgeUtils.getIsoCountryCode()));
+			form.add(new BasicNameValuePair(P_OPERATOR_CODE, AgeUtils.getOperatorCode()));
 			if(installCode != null) {
 				form.add(new BasicNameValuePair(P_INSTALL_CODE, installCode));
 			}
