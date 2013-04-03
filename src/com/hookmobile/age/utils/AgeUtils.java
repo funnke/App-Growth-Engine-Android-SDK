@@ -1,6 +1,7 @@
 package com.hookmobile.age.utils;
 
 import static com.hookmobile.age.AgeConstants.AGE_LAST_PHONE_COUNT;
+import static com.hookmobile.age.AgeConstants.AGE_LOG;
 import static com.hookmobile.age.AgeConstants.AGE_PREFERENCES;
 
 import org.json.JSONArray;
@@ -20,6 +21,7 @@ import android.net.NetworkInfo;
 import android.net.Uri;
 import android.provider.ContactsContract;
 import android.telephony.TelephonyManager;
+import android.util.Log;
 
 /**
  * Provides utility methods for AGE services and the sample app.
@@ -27,6 +29,8 @@ import android.telephony.TelephonyManager;
 public class AgeUtils {
 	
 	private static Cursor contactCursor;
+	private static String operatorCode;
+	private static String isoCountryCode;
 	
 	/**
      * Creates a new AgeUtils instance. 
@@ -245,13 +249,11 @@ public class AgeUtils {
 		try {
 			while(contactCursor.moveToNext()) {
 				if(addressBook.length() < limit) {
-					String phoneNumber = contactCursor.getString(contactCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
+					String phone = contactCursor.getString(contactCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
 					String displayName = contactCursor.getString(contactCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME));
 					JSONObject contactObj = new JSONObject();
 
 					try {
-						String phone = normalizePhone(phoneNumber);
-
 						if(phone.length() >= 10) {
 							if(displayName != null) {
 								int pos = displayName.lastIndexOf(" ");
@@ -309,8 +311,7 @@ public class AgeUtils {
 			
 			while(contactCursor.moveToNext()) {
 				if(++counter <= 10) {
-					String phoneNumber = contactCursor.getString(contactCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
-					String phone = normalizePhone(phoneNumber);
+					String phone = contactCursor.getString(contactCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
 					
 					hash.append(MurmurHash.hash(phone.getBytes(), 0)).append("|");
 				}
@@ -332,8 +333,17 @@ public class AgeUtils {
 	
     public static String queryDevicePhone(Context context) {
     	TelephonyManager manager = (TelephonyManager)context.getSystemService(Context.TELEPHONY_SERVICE); 
-    	
-    	return normalizePhone(manager.getLine1Number());
+    	if (manager != null) {
+    		operatorCode = manager.getNetworkOperator();
+    		if (operatorCode == null || operatorCode.length() == 0)
+    			operatorCode = manager.getSimOperator();
+    		isoCountryCode = manager.getNetworkCountryIso();
+    		if (isoCountryCode == null || isoCountryCode.length() == 0)
+    			isoCountryCode = manager.getSimCountryIso();
+    		if (isoCountryCode == null || isoCountryCode.length() == 0)
+    			isoCountryCode = context.getResources().getConfiguration().locale.getCountry();
+    	}
+    	return manager.getLine1Number();
     }
     
     public static int loadLastPhoneCount(Context context) {
@@ -360,4 +370,11 @@ public class AgeUtils {
     			ContactsContract.CommonDataKinds.Phone.NUMBER + " IS NOT NULL", null, null);
     }
     
+    public static String getOperatorCode() {
+    	return operatorCode;
+    }
+    
+    public static String getIsoCountryCode() {
+    	return isoCountryCode;
+    }
 }
