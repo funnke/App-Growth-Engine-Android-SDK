@@ -124,7 +124,7 @@ class AgeHelper {
     static String queryDevicePhone(Context context) {
     	TelephonyManager manager = (TelephonyManager)context.getSystemService(Context.TELEPHONY_SERVICE); 
     	
-    	return normalizePhone(manager.getLine1Number());
+    	return manager.getLine1Number();
     }
 
 	static String loadCurrentAppKey(Context context) {
