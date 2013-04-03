@@ -1,3 +1,7 @@
+1.1.5
+* Better handling of international phone number beyond United States.
+* Added queryPhoneNumberType() for determining if a phone number is of fixline or mobile type.
+
 1.1.4
 * enhancement: add Discover.trackEvent(eventName, eventValue) method for tracking user progress.  Invoking this method triggers server side callback.
 
