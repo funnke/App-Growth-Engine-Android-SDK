@@ -33,6 +33,8 @@ public class AgeConstants {
 	public static final String P_SEND_NOW              = "sendNow";
 	public static final String P_STATUS					= "status";
 	public static final String P_TAPJOY_UDID			= "tapjoyUdid";
+	public static final String P_ISO_COUNTRY_CODE		= "isoCountryCode";
+	public static final String P_OPERATOR_CODE		   = "operatorCode";
 	public static final String P_TOTAL_CLICK_THROUGH   = "totalClickThrough";
 	public static final String P_TOTAL_INVITEE         = "totalInvitee";
 	public static final String P_USE_VIRTUAL_NUMBER    = "useVirtualNumber";
