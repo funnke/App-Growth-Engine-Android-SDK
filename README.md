@@ -9,7 +9,7 @@ Hook Mobile has developed a unique and powerful tool for mobile app developers t
 
 To begin integrating with the Hook Mobile AGE Platform, <a href ="http://hookmobile.com/login.html">register your app with Hook Mobile</a> and enter your app's information.
 
-<img src="http://hookmobile.com/images/screenshot/create-app.png"/>
+<img src="http://hookmobile.com/images/screenshot/create-app.png"/><br>
 You are going to need the app key when setting up your Android app.
 
 <h3>Step 2: Install the AGE Android SDK</h3>
@@ -36,11 +36,10 @@ NOTE: <code>android.permission.SEND_SMS</code> is not required if you decide to 
 
 Once you have created an application, you can start the SDK when you initialize your activity with the app key you have registered. The first parameter is the type of Android <code>Context</code>. You can pass <code>this</code> object in your Android <code>Activity</code>.
 
-<pre><code>
-<a href= "http://docs.oracle.com/javase/1.5.0/docs/api/java/lang/Override.html">@Override</a>
+<pre><code><a href= "http://docs.oracle.com/javase/1.5.0/docs/api/java/lang/Override.html">@Override</a>
 protected void onCreate(android.os.Bundle savedInstanceState) {
  
-    Discoverer.activate(this, <b>"Your-App-Key"</b>);
+    Discoverer.activate(<b>this</b>, <b>"Your-App-Key"</b>);
     // ... ...
  
 }
@@ -91,21 +90,20 @@ NOTE: if your device is not a SMS device (e.g., a tablet), the AGE server will s
 
 The AGE API also allows you to track all referrals you have sent from any device, and get the referrals' click throughs. This makes it possible for you to track referral performance of individual devices, and potentially reward the users who generate the most referral click throughs.
 
-<a href ="http://docs.oracle.com/javase/1.5.0/docs/api/java/util/List.html">List</a><Referral> referrals = Discoverer.getInstance().queryReferrals();
+<code><a href ="http://docs.oracle.com/javase/1.5.0/docs/api/java/util/List.html">List</a><Referral> referrals = Discoverer.getInstance().queryReferrals();</code><br>
 Or, if you would like to query an individual referral:
-
-<code>Referral referral = Discoverer.getInstance().queryReferral(referralId);</code>
+<code>Referral referral = Discoverer.getInstance().queryReferral(referralId);</code><br>
 <code>referralId</code> parameter is the ID of the referral you want to query.
 
 <h3>Step 2: Track Friends Who Install The Same App</h3>
 
-The AGE platform allows you to find friends who also install the same app from your addressbook. To query for friends installs in your addressbook, you must call the <code>discover</code> method first. And then, you can call the <code>queryInstalls. This method takes a string parameter that indicates how the searching and matching of addressbook should be done.
+The AGE platform allows you to find friends who also install the same app from your addressbook. To query for friends installs in your addressbook, you must call the <code>discover</code> method first. And then, you can call the <code>queryInstalls</code>. This method takes a string parameter that indicates how the searching and matching of addressbook should be done.
 
-<code>FORWARD</code> - Find contacts within your address book who has the same app.
+* <code>FORWARD</code> - Find contacts within your address book who has the same app.
 
-<code>BACKWARD</code> - Find other app users who has your phone number in their address book. When to use this? When the app wants to suggest a long lost friend who has your contact, but not vice versa.
+* <code>BACKWARD</code> - Find other app users who has your phone number in their address book. When to use this? When the app wants to suggest a long lost friend who has your contact, but not vice versa.
 
-<code>MUTUAL</code> - Find contacts within your address book who has the same app and who also has your contact in his/her address book. This query may be useful for engaging a friend to play in multi-player game who already plays the game.
+* <code>MUTUAL</code> - Find contacts within your address book who has the same app and who also has your contact in his/her address book. This query may be useful for engaging a friend to play in multi-player game who already plays the game.
 
 Below is an example:
 
