@@ -82,7 +82,7 @@ The <code>phones</code> parameter is a <code>List</code> of phone numbers you wi
 <code>%link%</code> - Customized referral URL to download the app. <br>
 <code>%name%</code> - Name of the invitation sender supplied within newReferral call.
 
-<img src="http://hookmobile.com/images/screenshot/android-sample-send.png"/>
+<img src="http://hookmobile.com/images/screenshot/android-sample-send.png"/><br>
 NOTE: if your device is not a SMS device (e.g., a tablet), the AGE server will send out the referral message via the virtual number automatically.
 
 # Tracking Referrals and Installs
@@ -94,19 +94,22 @@ The AGE API also allows you to track all referrals you have sent from any device
 <a href ="http://docs.oracle.com/javase/1.5.0/docs/api/java/util/List.html">List</a><Referral> referrals = Discoverer.getInstance().queryReferrals();
 Or, if you would like to query an individual referral:
 
-Referral referral = Discoverer.getInstance().queryReferral(referralId);
-referralId parameter is the ID of the referral you want to query.
+<code>Referral referral = Discoverer.getInstance().queryReferral(referralId);</code>
+<code>referralId</code> parameter is the ID of the referral you want to query.
 
-Step 2: Track Friends Who Install The Same App
+<h3>Step 2: Track Friends Who Install The Same App</h3>
 
-The AGE platform allows you to find friends who also install the same app from your addressbook. To query for friends installs in your addressbook, you must call the discover method first. And then, you can call the queryInstalls. This method takes a string parameter that indicates how the searching and matching of addressbook should be done.
+The AGE platform allows you to find friends who also install the same app from your addressbook. To query for friends installs in your addressbook, you must call the <code>discover</code> method first. And then, you can call the <code>queryInstalls. This method takes a string parameter that indicates how the searching and matching of addressbook should be done.
 
-FORWARD - Find contacts within your address book who has the same app.
+<code>FORWARD</code> - Find contacts within your address book who has the same app.
 
-BACKWARD - Find other app users who has your phone number in their address book. When to use this? When the app wants to suggest a long lost friend who has your contact, but not vice versa.
+<code>BACKWARD</code> - Find other app users who has your phone number in their address book. When to use this? When the app wants to suggest a long lost friend who has your contact, but not vice versa.
 
-MUTUAL - Find contacts within your address book who has the same app and who also has your contact in his/her address book. This query may be useful for engaging a friend to play in multi-player game who already plays the game.
+<code>MUTUAL</code> - Find contacts within your address book who has the same app and who also has your contact in his/her address book. This query may be useful for engaging a friend to play in multi-player game who already plays the game.
 
 Below is an example:
 
-List<String> installs = Discoverer.getInstance().queryInstalls(Directions.FORWARD);
+<code><a href="http://docs.oracle.com/javase/1.5.0/docs/api/java/util/List.html">List</a><String> installs = Discoverer.getInstance().queryInstalls(Directions.FORWARD);</code>
+
+<img src="http://hookmobile.com/images/screenshot/android-sample-track.png"/>
+<img src="http://hookmobile.com/images/screenshot/android-sample-installs.png"/>
