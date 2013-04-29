@@ -19,7 +19,7 @@ Before you begin development with the AGE Android SDK, you will need to install 
 * Install <a href ="http://developer.android.com/sdk/index.html">Android SDK</a>
 * Download <a href ="https://github.com/hookmobile/App-Growth-Engine-Android-SDK">AGE Android SDK (GitHub)</a>
 
-To install the AGE SDK, copy <code>age-1.0.2.jar</code> to libs folder and add it to classpath in your Android project. Also, you need to add following permissions to your <code>AndroidManifest.xml</code>.
+To install the AGE SDK, copy <code>age-1.1.5.jar</code> to libs folder and add it to classpath in your Android project. Also, you need to add following permissions to your <code>AndroidManifest.xml</code>.
 
 <pre><code>		&lt;uses-permission android:name="android.permission.INTERNET"&gt;
     	&lt;uses-permission android:name="android.permission.READ_CONTACTS"&gt;
