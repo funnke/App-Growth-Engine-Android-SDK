@@ -56,7 +56,7 @@ The usage of the SDK is illustrated in the sample application. Just open the Ecl
 
 To get a list of contacts from user's addressbook that are most likely to install your app, you need to execute a discovery call:
 
-<code>Discoverer.getInstance().discover()</code>;
+<code>Discoverer.getInstance().discover();</code>
 
 <img src="http://hookmobile.com/images/screenshot/android-sample-leads.png"/>
 
@@ -76,10 +76,10 @@ The AGE platform enables you to track the performance of your referrals via cust
 
 The <code>phones</code> parameter is a <code>List</code> of phone numbers you wish to send referrals to. It is typically a list selected from the leads returned by <code>Discoverer.getInstance().queryLeads()</code>. The <code>useVirtualNumber</code> option specifies whether AGE should send out the referrals via its own virtual number. If not, the referrals will be sent out from the app user's device. The <code>name</code> parameter is the name of the app user, or invitation sender. The optional <code>message</code> parameter takes a message template in case you need to overwrite the default one configured in your app profile. Following is a sample message template with the predefined placeholders or variables:
 
-<code><a href ="http://docs.oracle.com/javase/1.5.0/docs/api/java/lang/String.html">String</a> message = "I thought you might be interested in this app, check it out here %link% - %name%"</code>;
+<code><a href ="http://docs.oracle.com/javase/1.5.0/docs/api/java/lang/String.html">String</a> message = "I thought you might be interested in this app, check it out here %link% - %name%";</code>
 
 <code>%link%</code> - Customized referral URL to download the app. <br>
-<code>%name%</code> - Name of the invitation sender supplied within newReferral call.
+<code>%name%</code> - Name of the invitation sender supplied within <code>newReferral</code> call.
 
 <img src="http://hookmobile.com/images/screenshot/android-sample-send.png"/><br>
 NOTE: if your device is not a SMS device (e.g., a tablet), the AGE server will send out the referral message via the virtual number automatically.
@@ -90,7 +90,8 @@ NOTE: if your device is not a SMS device (e.g., a tablet), the AGE server will s
 
 The AGE API also allows you to track all referrals you have sent from any device, and get the referrals' click throughs. This makes it possible for you to track referral performance of individual devices, and potentially reward the users who generate the most referral click throughs.
 
-<code><a href ="http://docs.oracle.com/javase/1.5.0/docs/api/java/util/List.html">List</a><Referral> referrals = Discoverer.getInstance().queryReferrals();</code><br>
+<code><a href ="http://docs.oracle.com/javase/1.5.0/docs/api/java/util/List.html">List</a><Referral> referrals = Discoverer.getInstance().queryReferrals();</code>
+
 Or, if you would like to query an individual referral:
 <code>Referral referral = Discoverer.getInstance().queryReferral(referralId);</code><br>
 <code>referralId</code> parameter is the ID of the referral you want to query.
@@ -109,5 +110,5 @@ Below is an example:
 
 <code><a href="http://docs.oracle.com/javase/1.5.0/docs/api/java/util/List.html">List</a><String> installs = Discoverer.getInstance().queryInstalls(Directions.FORWARD);</code>
 
-<img src="http://hookmobile.com/images/screenshot/android-sample-track.png"/>
+<img src="http://hookmobile.com/images/screenshot/android-sample-track.png"/><br>
 <img src="http://hookmobile.com/images/screenshot/android-sample-installs.png"/>
