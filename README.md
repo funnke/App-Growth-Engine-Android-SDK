@@ -110,5 +110,5 @@ Below is an example:
 
 <code><a href="http://docs.oracle.com/javase/1.5.0/docs/api/java/util/List.html">List</a><String> installs = Discoverer.getInstance().queryInstalls(Directions.FORWARD);</code>
 
-<img src="http://hookmobile.com/images/screenshot/android-sample-track.png"/> 
+<img src="http://hookmobile.com/images/screenshot/android-sample-track.png"/>   
 <img src="http://hookmobile.com/images/screenshot/android-sample-installs.png"/>
