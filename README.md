@@ -21,12 +21,12 @@ Before you begin development with the AGE Android SDK, you will need to install 
 
 To install the AGE SDK, copy <code>age-1.1.5.jar</code> to libs folder and add it to classpath in your Android project. Also, you need to add following permissions to your <code>AndroidManifest.xml</code>.
 
-<pre><code>		&lt;uses-permission android:name="android.permission.INTERNET"&gt;
-	&lt;uses-permission android:name="android.permission.READ_CONTACTS"&gt;
-	&lt;uses-permission android:name="android.permission.READ_PHONE_STATE"&gt;
-    &lt;uses-permission android:name="android.permission.SEND_SMS"&gt;
-    &lt;uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"&gt;
-    &lt;uses-permission android:name="android.permission.ACCESS_WIFI_STATE"&gt;</code></pre>
+<pre><code>	&lt;uses-permission android:name="android.permission.INTERNET"&gt;
+	 &lt;uses-permission android:name="android.permission.READ_CONTACTS"&gt;
+	 &lt;uses-permission android:name="android.permission.READ_PHONE_STATE"&gt;
+     &lt;uses-permission android:name="android.permission.SEND_SMS"&gt;
+     &lt;uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"&gt;
+     &lt;uses-permission android:name="android.permission.ACCESS_WIFI_STATE"&gt;</code></pre>
 
 NOTE: <code>android.permission.SEND_SMS</code> is not required if you decide to use only Hook Mobile virtual number to send invitations.
 
