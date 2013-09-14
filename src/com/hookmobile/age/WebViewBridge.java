@@ -13,6 +13,7 @@ import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.os.Handler;
 import android.os.Message;
+import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
 
 /**
@@ -114,6 +115,7 @@ public class WebViewBridge {
 	/**
 	 * initiate address book discovery process.
 	 */
+	@JavascriptInterface
 	public void discover() {
 
 		try {
@@ -166,6 +168,7 @@ public class WebViewBridge {
 	 * @param phones
 	 * @return
 	 */
+	@JavascriptInterface
 	public int newReferral(String[] phones){
 		messageHandler.sendEmptyMessage(HANDLE_SHOW_LOADING);
 		List<String> listPhones = new ArrayList<String>();
