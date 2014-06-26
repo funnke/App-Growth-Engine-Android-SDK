@@ -38,6 +38,7 @@ public class WebViewBridge {
 	final private ProgressDialog progressDialog;
 	private boolean useVirtualNumber;
 	private long firstTimeDiscoveryDelayMs = FIRST_TIME_DISCOVERY_DELAY_MS;
+	private String senderName;
 	
 	private final Handler messageHandler = new Handler() {
 		@Override
@@ -133,7 +134,7 @@ public class WebViewBridge {
 						if(listLeads == null || listLeads.size() == 0)
 							return;
 						
-						StringBuilder sb = new StringBuilder();
+						final StringBuilder sb = new StringBuilder();
 						sb.append("{\"leads\":[");
 						
 						for(Iterator<Lead> i = listLeads.iterator(); i.hasNext(); ) {
@@ -149,7 +150,11 @@ public class WebViewBridge {
 								sb.append("\"}]}");
 						}
 
-						webView.loadUrl("javascript:displayLeads('" + sb.toString() + "')");
+						activity.runOnUiThread(new Runnable() {
+				            public void run() {
+								webView.loadUrl("javascript:displayLeads('" + sb.toString() + "')");
+				            }
+				        });      
 					} catch (AgeException e) {
 						 displayError(e);
 					} finally {
@@ -175,7 +180,7 @@ public class WebViewBridge {
 		for(int i = 0; i < phones.length; ++i)
 			listPhones.add(phones[i]);
 		try{
-			Discoverer.getInstance().newReferral(listPhones, useVirtualNumber, null);
+			Discoverer.getInstance().newReferral(listPhones, useVirtualNumber, this.senderName);
 			messageHandler.sendEmptyMessage(HANDLE_INVITATION_SENT);
 			return phones.length;
 		} catch (AgeException e) {
@@ -187,6 +192,7 @@ public class WebViewBridge {
 	}
 	
 	//Backward
+	@JavascriptInterface
 	public void back() {
 		activity.setResult(Activity.RESULT_OK, activity.getIntent());
 		activity.finish();
@@ -216,5 +222,17 @@ public class WebViewBridge {
 		this.firstTimeDiscoveryDelayMs = firstTimeDiscoveryDelayMs;
 	}
 
+	/**
+	 * @param senderName the senderName to set
+	 */
+	public void setSenderName(String senderName) {
+		this.senderName = senderName;
+	}
 
+	/**
+	 * @return the senderName
+	 */
+	public String getSenderName() {
+		return senderName;
+	}
 }
