@@ -52,14 +52,15 @@ public class WebViewBridge {
 				String[] content = (String[])msg.obj;
 				showErrorDialog(content[0], content[1], content[2]);
 			} else if (msg.what == HANDLE_INVITATION_SENT) {
-				progressDialog.setMessage(INVITATION_SENT);
+				progressDialog.cancel();
+				/*progressDialog.setMessage(INVITATION_SENT);
 				Timer timer = new Timer();
 				timer.schedule(new TimerTask() {
 					@Override
 					public void run() {
 						progressDialog.cancel();
 					}
-				}, 750);
+				}, 750);*/
 			}
 		}
 
@@ -182,7 +183,15 @@ public class WebViewBridge {
 		try{
 			Discoverer.getInstance().newReferral(listPhones, useVirtualNumber, this.senderName);
 			messageHandler.sendEmptyMessage(HANDLE_INVITATION_SENT);
+			
+			activity.runOnUiThread(new Runnable() {
+	            public void run() {
+	            	webView.loadUrl("javascript:invitationsSent()");
+	            }
+	        });     
+			
 			return phones.length;
+			
 		} catch (AgeException e) {
 			messageHandler.sendEmptyMessage(HANDLE_HIDE_LOADING);
 			 displayError(e);
